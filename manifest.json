@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_extName__",
+  "short_name": "Webtoon DL",
+  "version": "1.0.9",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
+  "minimum_chrome_version": "116",
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Open Webtoon Downloader",
+    "default_icon": {
+      "16": "src/icons/icon16.png",
+      "32": "src/icons/icon32.png",
+      "128": "src/icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "src/icons/icon16.png",
+    "32": "src/icons/icon32.png",
+    "128": "src/icons/icon128.png"
+  },
+  "permissions": [
+    "downloads",
+    "scripting",
+    "storage",
+    "offscreen",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "*://*.webtoons.com/*",
+    "*://*.pstatic.net/*",
+    "*://*.webtoon.co.kr/*",
+    "*://page.kakao.com/*",
+    "https://dn-img-page.kakao.com/*",
+    "*://*.kakaoentcdn.com/*",
+    "*://page-edge.kakao.com/*",
+    "*://bff-page.kakao.com/*",
+    "https://comic.naver.com/*",
+    "https://m.comic.naver.com/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "referer_rules",
+        "enabled": true,
+        "path": "rules/referer.json"
+      }
+    ]
+  }
+}

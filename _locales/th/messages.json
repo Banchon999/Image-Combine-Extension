@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "ตัวดาวน์โหลดเว็บตูน",
+    "description": "Extension name shown in the browser."
+  },
+  "extDescription": {
+    "message": "ดาวน์โหลดตอนของเว็บตูนเป็น PDF, CBZ หรือไฟล์ภาพต้นฉบับ พร้อมการค้นหา เลือกช่วงตอน และดาวน์โหลดแบบขนาน",
+    "description": "Extension description shown on the extensions page."
+  }
+}

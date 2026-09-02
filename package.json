@@ -1,0 +1,13 @@
+{
+  "name": "downloade-webtoon",
+  "version": "1.0.9",
+  "private": true,
+  "type": "module",
+  "description": "Chrome MV3 extension that downloads webtoon chapters as PDF, CBZ or raw images.",
+  "license": "AGPL-3.0-or-later",
+  "scripts": {
+    "test": "node --test test/unit/*.test.js",
+    "test:browser": "node test/browser/run.mjs",
+    "icons": "node tools/make-icons.mjs"
+  }
+}

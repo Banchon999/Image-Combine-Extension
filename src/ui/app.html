@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Webtoon Downloader</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span> Webtoon Downloader</div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-search" aria-selected="true" data-view="search">Search</button>
+      <button class="tab" role="tab" id="tab-following" aria-selected="false" data-view="following">ติดตาม</button>
+      <button class="tab" role="tab" id="tab-series" aria-selected="false" data-view="series">Series</button>
+      <button class="tab" role="tab" id="tab-queue"  aria-selected="false" data-view="queue">Queue</button>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+
+  <div class="col-main">
+
+    <!-- ----------------------------- Search ----------------------------- -->
+    <section class="view" id="view-search" role="tabpanel" aria-labelledby="tab-search">
+      <div class="panel">
+        <label class="field">
+          <span>Open by URL</span>
+          <div class="row">
+            <input type="text" id="url-input" class="grow-2"
+                   placeholder="https://www.webtoons.com/en/.../list?title_no=95"
+                   autocomplete="off" spellcheck="false">
+            <button id="url-go">Open</button>
+          </div>
+        </label>
+        <p class="hint">Paste a series or episode link from a supported site.</p>
+
+        <label class="field">
+          <span>Search site</span>
+          <select id="search-site" aria-label="Search site">
+            <option value="webtoons">WEBTOON</option>
+            <option value="naver">NAVER Webtoon</option>
+            <option value="kakao">Kakao Page</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Search by title / author</span>
+          <div class="row">
+            <input type="search" id="search-input" class="grow-2" placeholder="Tower of God" autocomplete="off">
+            <select id="search-lang" aria-label="Search language"></select>
+          </div>
+        </label>
+        <button class="primary block" id="search-go">Search</button>
+        <p class="hint" id="search-hint"></p>
+        <a id="search-external" target="_blank" rel="noopener noreferrer" hidden>See all results on the site</a>
+      </div>
+
+      <div id="search-status" role="status" aria-live="polite"></div>
+      <div id="search-results" class="results"></div>
+    </section>
+
+    <section class="view" id="view-following" role="tabpanel" aria-labelledby="tab-following" hidden>
+      <div class="panel">
+        <h2>เรื่องที่ติดตาม</h2>
+        <p class="hint">จำตอนที่มีอยู่ตอนเริ่มติดตาม แล้วกดเช็กหาตอนที่เพิ่มมา ไม่ดาวน์โหลดหรือซื้อให้อัตโนมัติ</p>
+        <div class="follow-actions">
+          <button id="follow-check-all" class="primary">เช็กตอนใหม่ทั้งหมด</button>
+          <button id="follow-export">สำรองรายการ JSON</button>
+          <button id="follow-import">นำเข้ารายการ</button>
+          <input id="follow-import-file" type="file" accept=".json,application/json" hidden>
+        </div>
+        <p class="hint">เก็บในเบราว์เซอร์นี้ ปิดแล้วเปิดใหม่ยังอยู่ แต่ก่อนลบ/ติดตั้งส่วนขยายใหม่ให้สำรองรายการก่อน</p>
+      </div>
+      <div id="following-status" role="status" aria-live="polite"></div>
+      <div id="following-body"></div>
+    </section>
+
+    <!-- ----------------------------- Series ----------------------------- -->
+    <section class="view" id="view-series" role="tabpanel" aria-labelledby="tab-series" hidden>
+      <div id="series-body">
+        <div class="empty">Pick a series from Search, or paste a link.</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ------------------------------- Queue ------------------------------ -->
+  <aside class="col-queue">
+    <section class="view" id="view-queue" role="tabpanel" aria-labelledby="tab-queue" hidden>
+      <h2 class="col-title">Queue</h2>
+      <div id="queue-body">
+        <div class="empty">No downloads yet.</div>
+      </div>
+    </section>
+  </aside>
+
+</main>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

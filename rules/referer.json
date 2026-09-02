@@ -1,0 +1,78 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://www.webtoons.com/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "pstatic.net",
+        "webtoons.com",
+        "webtoon.co.kr"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://page.kakao.com/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "kakaoentcdn.com",
+        "page.kakao.com",
+        "page-edge.kakao.com",
+        "bff-page.kakao.com",
+        "kakao.com"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 2,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://comic.naver.com/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "comic.naver.com",
+        "image-comic.pstatic.net"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest",
+        "image"
+      ]
+    }
+  }
+]

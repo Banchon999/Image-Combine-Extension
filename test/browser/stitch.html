@@ -1,0 +1,45 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Stitch renderer checks</title>
+<style>body{font:16px system-ui;background:#161923;color:#eee;padding:24px}img{width:96px;vertical-align:top;margin:8px;border:1px solid #aaa}pre{white-space:pre-wrap}</style>
+<h1>Native canvas stitching</h1><button id="run">Run image tests</button><pre id="results">Ready</pre><div id="preview"></div>
+<script type="module">
+import {stitchPages} from '../../src/offscreen/convert/stitch.js';
+import {buildCbz} from '../../src/offscreen/convert/cbz.js';
+import {buildPdf} from '../../src/offscreen/convert/pdf.js';
+const report=document.querySelector('#results'),preview=document.querySelector('#preview');
+const assert=(v,m)=>{if(!v)throw new Error(m);};
+async function source(w,h,color,index){const c=new OffscreenCanvas(w,h),ctx=c.getContext('2d');ctx.fillStyle=color;ctx.fillRect(0,0,w,h);const b=await c.convertToBlob({type:'image/png'});return {data:new Uint8Array(await b.arrayBuffer()),mimeType:b.type,index,width:w,height:h};}
+async function run(){
+ report.textContent='Running';preview.replaceChildren();const logs=[];
+ try{
+  const pages=await Promise.all([source(32,30,'#ff0000',1),source(32,40,'#00ff00',2),source(32,50,'#0000ff',3)]);
+  for(const mime of ['image/png','image/jpeg','image/webp']){
+   const out=[];for await(const part of stitchPages(pages,{stitchMode:'height',stitchHeight:45,stitchMime:mime}))out.push(part);
+   assert(out.length===3,'expected 3 parts');assert(out.map(p=>p.height).join(',')==='45,45,30','height mismatch');
+   let y=0;
+   for(const part of out){
+    const blob=new Blob([part.data],{type:part.mimeType});const bitmap=await createImageBitmap(blob);
+    assert(bitmap.width===32&&bitmap.height===part.height,'decoded dimensions');
+    const c=new OffscreenCanvas(32,part.height),ctx=c.getContext('2d');ctx.drawImage(bitmap,0,0);bitmap.close();
+    if(mime==='image/png')for(let row=0;row<part.height;row++){
+     const rgb=ctx.getImageData(16,row,1,1).data,expected=y+row<30?[255,0,0]:y+row<70?[0,255,0]:[0,0,255];
+     assert(expected.every((v,i)=>rgb[i]===v),`lost/reordered row ${y+row}`);
+    }
+    if(mime==='image/png'){const img=document.createElement('img');img.src=URL.createObjectURL(blob);img.alt=`PNG part ${part.index}: 32 × ${part.height}`;preview.append(img);}
+    y+=part.height;
+   }
+   assert(y===120,'tail missing');
+   const archive=buildCbz(out.map(p=>({name:`${p.index}.${mime.split('/')[1]}`,data:p.data})),{format:'zip'});
+   assert(archive.size>out.reduce((n,p)=>n+p.data.length,0),'ZIP wrapper missing');
+   if(mime==='image/jpeg')assert(buildPdf(out).size>0,'PDF failed');
+   logs.push(`PASS ${mime}: 3 encoded/decoded parts, 32 × [45,45,30]; ${mime==='image/png'?'all 120 pixel rows exact':'dimensions verified'}`);
+  }
+  const counted=[];for await(const part of stitchPages(pages,{stitchMode:'count',stitchCount:7,stitchHeight:25,stitchMime:'image/png'}))counted.push(part);
+  assert(counted.length===7&&counted.reduce((n,p)=>n+p.height,0)===120,'count split failed');logs.push('PASS exact count + maximum height: 7 parts, all rows retained');
+  const long=await source(720,9000,'#de8b42',1);const smart=[];
+  for await(const part of stitchPages([long],{stitchMode:'smart',stitchMime:'image/jpeg'}))smart.push(part);
+  assert(smart.length===1&&smart[0].height===9000,'Smart desktop boundary');logs.push('PASS Smart native 720 × 9000 -> one image');
+  report.textContent=logs.join('\n')+'\nALL PASSED';
+ }catch(error){report.textContent=logs.join('\n')+'\nFAIL: '+error.stack;}
+}
+document.querySelector('#run').addEventListener('click',run);
+</script></html>
