@@ -1,0 +1,17 @@
+<!doctype html>
+<!--
+  Mirrors the real viewer markup. The decoy data-url outside #_imageList is the
+  important part of this fixture: the live page carries over 1300 such lazy-load
+  attributes on recommendation thumbnails, so a parser that does not scope to
+  #_imageList img._images downloads hundreds of unrelated images per chapter.
+-->
+<html><body>
+<img class="lazy" data-url="https://cdn.example/DECOY-recommendation.jpg">
+<div id="_imageList">
+  <img src="https://cdn.example/blank.png" width="700" height="1140" class="_images"
+       data-url="https://cdn.example/p1.jpg?type=q90">
+  <img src="https://cdn.example/blank.png" width="700" height="900" class="_images"
+       data-url="https://cdn.example/p2.jpg?type=q90&amp;t=99">
+</div>
+<img class="lazy" data-url="https://cdn.example/DECOY-footer.jpg">
+</body></html>

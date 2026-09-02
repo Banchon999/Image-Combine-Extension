@@ -1,0 +1,15 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Downloade-Webtoon worker</title>
+<!--
+  Offscreen document: never visible.
+
+  It exists because an MV3 service worker is torn down after roughly 30
+  seconds idle, which would abort a chapter download mid-flight. This document
+  persists for the life of the job and owns everything long-running: fetching,
+  HTML parsing (it has DOMParser, the worker does not), image decoding and
+  archive assembly.
+-->
+<body>
+<script type="module" src="offscreen.js"></script>
+</body>

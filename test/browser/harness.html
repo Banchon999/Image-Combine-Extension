@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>DOM parser harness</title></head>
+<body>
+<!--
+  Test harness for the DOM-dependent half of the webtoons adapter.
+
+  The parsers take a Document, which Node has no implementation of, so they are
+  exercised in a real browser against the fixtures in test/fixtures. Served over
+  http:// rather than file:// because Chrome blocks ES module imports on
+  file:// origins.
+
+  Lives outside src/ so it is never part of the packaged extension.
+-->
+<script type="module">
+  import {
+    parseChapterList,
+    parseSeriesMeta,
+    parseViewerImages,
+    parseSearchResults,
+    parseMaxPage,
+  } from '/src/adapters/webtoons.js';
+
+  const results = [];
+  const check = (name, condition, detail = '') => results.push({ name, pass: Boolean(condition), detail });
+
+  async function doc(path) {
+    const html = await (await fetch(path)).text();
+    return new DOMParser().parseFromString(html, 'text/html');
+  }
+
+  try {
+    /* ------------------------------ list page ------------------------------ */
+    const list = await doc('/test/fixtures/list.html');
+
+    const meta = parseSeriesMeta(list);
+    check('series title from og:title', meta.title === 'Test Series', meta.title);
+    check('series author', meta.author === 'Some Author', meta.author);
+    check('series cover', meta.cover === 'https://cdn.example/cover.jpg', meta.cover);
+
+    const chapters = parseChapterList(list);
+    check('chapter count', chapters.length === 2, String(chapters.length));
+    // Episode number comes from data-episode-no, not from parsing the href.
+    check('episode numbers from data-episode-no',
+      chapters[0].number === 3 && chapters[1].number === 2,
+      JSON.stringify(chapters.map((c) => c.number)));
+    check('chapter title from span.subj span',
+      chapters[0].title === 'Episode Three', chapters[0].title);
+    check('chapter date', chapters[0].date === 'Mar 3, 2024', chapters[0].date);
+    check('chapter url', chapters[0].url.includes('episode_no=3'), chapters[0].url);
+    check('max page from paginator', parseMaxPage(list) === 3, String(parseMaxPage(list)));
+
+    /* ----------------------------- viewer page ----------------------------- */
+    const viewer = await doc('/test/fixtures/viewer.html');
+
+    const images = parseViewerImages(viewer, { originalQuality: true });
+    // The decisive assertion: the fixture carries decoy data-url attributes
+    // outside #_imageList, mirroring the ~1300 the live page has. A parser that
+    // does not scope correctly would return 4 here instead of 2.
+    check('scopes to #_imageList only (ignores decoys)',
+      images.length === 2, `got ${images.length}`);
+    check('no decoy urls leaked',
+      !images.some((i) => i.url.includes('DECOY')),
+      JSON.stringify(images.map((i) => i.url)));
+    check('original quality strips ?type=q90',
+      images[0].url === 'https://cdn.example/p1.jpg', images[0].url);
+    check('original quality keeps q90 as a CDN fallback',
+      images[0].fallbackUrl === 'https://cdn.example/p1.jpg?type=q90', images[0].fallbackUrl);
+    check('original quality keeps other params',
+      images[1].url === 'https://cdn.example/p2.jpg?t=99', images[1].url);
+    check('dimensions read from markup',
+      images[0].width === 700 && images[0].height === 1140,
+      `${images[0].width}x${images[0].height}`);
+    check('index is 1-based and sequential',
+      images[0].index === 1 && images[1].index === 2);
+
+    const asServed = parseViewerImages(viewer, { originalQuality: false });
+    check('originalQuality:false leaves the q90 url intact',
+      asServed[0].url === 'https://cdn.example/p1.jpg?type=q90', asServed[0].url);
+    check('originalQuality:false needs no duplicate fallback',
+      asServed[0].fallbackUrl === undefined, String(asServed[0].fallbackUrl));
+
+    /* ----------------------------- search page ----------------------------- */
+    const search = await doc('/test/fixtures/search.html');
+
+    const found = parseSearchResults(search);
+    check('search result count', found.length === 2, String(found.length));
+    check('search title from strong.title', found[0].title === 'Alpha Series', found[0].title);
+    check('search author', found[0].author === 'Author A', found[0].author);
+    check('search seriesId from data-title-no', found[0].seriesId === '11', found[0].seriesId);
+    check('search url absolute', found[1].url.includes('title_no=22'), found[1].url);
+  } catch (error) {
+    check('harness ran without throwing', false, String(error && error.stack || error));
+  }
+
+  window.__RESULTS__ = results;
+  document.title = 'done';
+</script>
+</body>
+</html>

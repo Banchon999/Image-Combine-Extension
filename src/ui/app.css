@@ -1,0 +1,457 @@
+/*
+ * App page styling.
+ *
+ * Dark-first, because the page is usually opened next to a comic and a bright
+ * surface next to artwork is unpleasant to read against. The light palette is a
+ * full override rather than an afterthought, so the page follows the browser
+ * theme either way.
+ *
+ * The same stylesheet covers a narrow window and a maximised one: content is
+ * centred to a readable column instead of stretching, and gains a second column
+ * for the queue once there is room.
+ */
+
+:root {
+  color-scheme: dark light;
+
+  --bg: #0f1115;
+  --bg-raised: #171a21;
+  --bg-input: #1d212a;
+  --border: #272c37;
+  --border-strong: #363d4c;
+
+  --text: #e7e9ee;
+  --text-dim: #9aa3b2;
+  --text-faint: #6b7382;
+
+  --accent: #4f8cff;
+  --accent-hover: #6d9fff;
+  --accent-soft: rgba(79, 140, 255, 0.14);
+
+  --ok: #3fb950;
+  --warn: #d29922;
+  --danger: #f26d6d;
+  --protected: #a371f7;
+
+  --radius: 10px;
+  --radius-sm: 7px;
+  --gap: 12px;
+
+  /* Content column width. A full browser tab is far wider than comfortable
+     reading measure, so the page is centred rather than stretched. */
+  --page-max: 1180px;
+  --page-pad: 20px;
+
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #ffffff;
+    --bg-raised: #f6f7f9;
+    --bg-input: #ffffff;
+    --border: #e2e5ea;
+    --border-strong: #c9cdd6;
+    --text: #14161a;
+    --text-dim: #5a6372;
+    --text-faint: #868e9c;
+    --accent-soft: rgba(79, 140, 255, 0.12);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--text);
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* ------------------------------- chrome ---------------------------------- */
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Centred to the same width as the content below, so the header does not run
+   edge to edge on a wide monitor while the content sits in a column.
+   Named .topbar, not .bar: .bar is the queue progress bar, whose
+   `height: 4px; overflow: hidden` would crush this and clip its contents. */
+.topbar {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 var(--page-pad);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 10px;
+  font-weight: 650;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.brand .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px 4px 10px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-weight: 550;
+  cursor: pointer;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.tab:hover { color: var(--text); background: var(--bg-raised); }
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tab[hidden] { display: none; }
+
+.view[hidden] { display: none; }
+[hidden] { display: none !important; }
+
+.follow-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.followed-card { margin-top: 12px; overflow-wrap: anywhere; }
+.followed-card .series-head > div { min-width: 0; }
+#following-status:empty { display: none; }
+
+/* ------------------------------- page layout ------------------------------ */
+
+.layout {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 16px var(--page-pad) 48px;
+}
+
+.col-title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+/* A wide window gets two columns: browsing on the left, the queue pinned on
+   the right so a running download stays visible while you look for the next
+   series. Narrow falls back to the tabbed single column. */
+@media (min-width: 900px) {
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 28px;
+    align-items: start;
+  }
+
+  .col-queue {
+    position: sticky;
+    top: 76px;
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+  }
+
+  .tabs { max-width: 320px; }
+  .tab { flex: 0 0 auto; padding-inline: 16px; }
+}
+
+/* On a narrow window the queue column is just another tabbed view. */
+@media (max-width: 899px) {
+  .col-title { display: none; }
+}
+
+/* ------------------------------- controls -------------------------------- */
+
+label.field {
+  display: block;
+  margin-bottom: var(--gap);
+}
+
+label.field > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-dim);
+  font-size: 11.5px;
+  font-weight: 550;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+input[type="text"],
+input[type="search"],
+input[type="number"],
+select {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font: inherit;
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.row .grow-2 { flex: 2; }
+
+button {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-raised);
+  color: var(--text);
+  font: inherit;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+button.primary:hover:not(:disabled) { background: var(--accent-hover); color: #fff; }
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--gap);
+  cursor: pointer;
+}
+.checkbox input { width: 15px; height: 15px; accent-color: var(--accent); }
+
+/* -------------------------------- cards ---------------------------------- */
+
+.card {
+  display: flex;
+  gap: 10px;
+  padding: 9px;
+  margin-bottom: 8px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  align-items: center;
+}
+
+.card:hover { border-color: var(--accent); }
+
+.card img {
+  width: 44px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: 5px;
+  background: var(--bg-input);
+  flex: none;
+}
+
+.card .meta { min-width: 0; flex: 1; }
+.card .title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card .sub { color: var(--text-dim); font-size: 12px; }
+
+/* ------------------------------ series view ------------------------------ */
+
+.series-head {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.series-head img {
+  width: 64px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  flex: none;
+}
+.series-head h2 { margin: 0 0 2px; font-size: 15px; }
+.series-head .sub { color: var(--text-dim); font-size: 12px; }
+
+.hint {
+  color: var(--text-faint);
+  font-size: 11.5px;
+  margin: -6px 0 var(--gap);
+}
+
+/* ------------------------------ queue view ------------------------------- */
+
+.job {
+  padding: 11px;
+  margin-bottom: 10px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.job-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.job-head strong { font-size: 13px; }
+
+.chapter {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.chapter .num { color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.chapter .note { color: var(--text-dim); font-size: 11px; }
+
+.bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+.pill {
+  padding: 1px 7px;
+  border-radius: 20px;
+  font-size: 10.5px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.pill.queued   { background: var(--bg-input); color: var(--text-faint); }
+.pill.running  { background: var(--accent-soft); color: var(--accent); }
+.pill.done     { background: rgba(63, 185, 80, 0.15); color: var(--ok); }
+.pill.partial  { background: rgba(210, 153, 34, 0.15); color: var(--warn); }
+.pill.failed   { background: rgba(242, 109, 109, 0.15); color: var(--danger); }
+.pill.cancelled{ background: var(--bg-input); color: var(--text-faint); }
+.pill.skipped-protected { background: rgba(163, 113, 247, 0.15); color: var(--protected); }
+
+/* ------------------------------- messages -------------------------------- */
+
+.notice {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-dim);
+  font-size: 12px;
+  margin-bottom: var(--gap);
+}
+.notice.error   { border-color: var(--danger); color: var(--danger); }
+.notice.protected {
+  border-color: var(--protected);
+  color: var(--text);
+  background: rgba(163, 113, 247, 0.08);
+}
+.notice strong { color: var(--text); }
+
+.empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+  vertical-align: -2px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 2s; }
+  .bar > i { transition: none; }
+}
+
+details.settings {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+details.settings summary {
+  cursor: pointer;
+  color: var(--text-dim);
+  font-weight: 550;
+  margin-bottom: 10px;
+}
+
+/* ------------------------------- components ------------------------------- */
+
+/* Groups the input controls so they read as one block against the page
+   background now that there is room around them. */
+.panel {
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+button.block { width: 100%; }
+
+/* Search results become a grid once there is width for more than one column. */
+@media (min-width: 640px) {
+  .results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 8px;
+  }
+  .results .card { margin-bottom: 0; }
+}

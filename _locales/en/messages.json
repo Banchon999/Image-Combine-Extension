@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "Webtoon Downloader",
+    "description": "Extension name shown in the browser."
+  },
+  "extDescription": {
+    "message": "Download webtoon chapters as PDF, CBZ or raw images, with search, chapter ranges and parallel fetching.",
+    "description": "Extension description shown on the extensions page."
+  }
+}
