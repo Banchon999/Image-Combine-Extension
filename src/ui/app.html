@@ -10,12 +10,12 @@
 
 <header>
   <div class="topbar">
-    <div class="brand"><span class="dot"></span> Webtoon Downloader</div>
+    <div class="brand"><span class="dot"></span> <span data-i18n="appTitle">Webtoon Downloader</span></div>
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" id="tab-search" aria-selected="true" data-view="search">Search</button>
-      <button class="tab" role="tab" id="tab-following" aria-selected="false" data-view="following">ติดตาม</button>
-      <button class="tab" role="tab" id="tab-series" aria-selected="false" data-view="series">Series</button>
-      <button class="tab" role="tab" id="tab-queue"  aria-selected="false" data-view="queue">Queue</button>
+      <button class="tab" role="tab" id="tab-search" aria-controls="view-search" aria-selected="true" tabindex="0" data-view="search" data-i18n="tabSearch">Search</button>
+      <button class="tab" role="tab" id="tab-following" aria-controls="view-following" aria-selected="false" tabindex="-1" data-view="following" data-i18n="tabFollowing">Following</button>
+      <button class="tab" role="tab" id="tab-series" aria-controls="view-series" aria-selected="false" tabindex="-1" data-view="series" data-i18n="tabSeries">Series</button>
+      <button class="tab" role="tab" id="tab-queue" aria-controls="view-queue" aria-selected="false" tabindex="-1" data-view="queue" data-i18n="tabQueue">Queue</button>
     </div>
   </div>
 </header>
@@ -28,18 +28,18 @@
     <section class="view" id="view-search" role="tabpanel" aria-labelledby="tab-search">
       <div class="panel">
         <label class="field">
-          <span>Open by URL</span>
+          <span data-i18n="openByUrl">Open by URL</span>
           <div class="row">
             <input type="text" id="url-input" class="grow-2"
                    placeholder="https://www.webtoons.com/en/.../list?title_no=95"
                    autocomplete="off" spellcheck="false">
-            <button id="url-go">Open</button>
+            <button id="url-go" data-i18n="openButton">Open</button>
           </div>
         </label>
-        <p class="hint">Paste a series or episode link from a supported site.</p>
+        <p class="hint" data-i18n="pasteUrlHint">Paste a series or episode link from a supported site.</p>
 
         <label class="field">
-          <span>Search site</span>
+          <span data-i18n="searchSite">Search site</span>
           <select id="search-site" aria-label="Search site">
             <option value="webtoons">WEBTOON</option>
             <option value="naver">NAVER Webtoon</option>
@@ -47,15 +47,15 @@
           </select>
         </label>
         <label class="field">
-          <span>Search by title / author</span>
+          <span data-i18n="searchBy">Search by title / author</span>
           <div class="row">
             <input type="search" id="search-input" class="grow-2" placeholder="Tower of God" autocomplete="off">
             <select id="search-lang" aria-label="Search language"></select>
           </div>
         </label>
-        <button class="primary block" id="search-go">Search</button>
+        <button class="primary block" id="search-go" data-i18n="searchButton">Search</button>
         <p class="hint" id="search-hint"></p>
-        <a id="search-external" target="_blank" rel="noopener noreferrer" hidden>See all results on the site</a>
+        <a id="search-external" target="_blank" rel="noopener noreferrer" hidden data-i18n="seeAllResults">See all results on the site</a>
       </div>
 
       <div id="search-status" role="status" aria-live="polite"></div>
@@ -64,15 +64,15 @@
 
     <section class="view" id="view-following" role="tabpanel" aria-labelledby="tab-following" hidden>
       <div class="panel">
-        <h2>เรื่องที่ติดตาม</h2>
-        <p class="hint">จำตอนที่มีอยู่ตอนเริ่มติดตาม แล้วกดเช็กหาตอนที่เพิ่มมา ไม่ดาวน์โหลดหรือซื้อให้อัตโนมัติ</p>
+        <h2 data-i18n="followingTitle">Following</h2>
+        <p class="hint" data-i18n="followingHint">Remember existing chapters and check for additions. Nothing is downloaded or purchased automatically.</p>
         <div class="follow-actions">
-          <button id="follow-check-all" class="primary">เช็กตอนใหม่ทั้งหมด</button>
-          <button id="follow-export">สำรองรายการ JSON</button>
-          <button id="follow-import">นำเข้ารายการ</button>
+          <button id="follow-check-all" class="primary" data-i18n="checkAll">Check all</button>
+          <button id="follow-export" data-i18n="exportBackup">Export JSON</button>
+          <button id="follow-import" data-i18n="importBackup">Import</button>
           <input id="follow-import-file" type="file" accept=".json,application/json" hidden>
         </div>
-        <p class="hint">เก็บในเบราว์เซอร์นี้ ปิดแล้วเปิดใหม่ยังอยู่ แต่ก่อนลบ/ติดตั้งส่วนขยายใหม่ให้สำรองรายการก่อน</p>
+        <p class="hint" data-i18n="backupHint">Stored in this browser. Export a backup before removing or reinstalling the extension.</p>
       </div>
       <div id="following-status" role="status" aria-live="polite"></div>
       <div id="following-body"></div>
@@ -81,7 +81,7 @@
     <!-- ----------------------------- Series ----------------------------- -->
     <section class="view" id="view-series" role="tabpanel" aria-labelledby="tab-series" hidden>
       <div id="series-body">
-        <div class="empty">Pick a series from Search, or paste a link.</div>
+        <div class="empty" data-i18n="seriesEmpty">Pick a series from Search, or paste a link.</div>
       </div>
     </section>
 
@@ -90,9 +90,9 @@
   <!-- ------------------------------- Queue ------------------------------ -->
   <aside class="col-queue">
     <section class="view" id="view-queue" role="tabpanel" aria-labelledby="tab-queue" hidden>
-      <h2 class="col-title">Queue</h2>
+      <h2 class="col-title" data-i18n="tabQueue">Queue</h2>
       <div id="queue-body">
-        <div class="empty">No downloads yet.</div>
+        <div class="empty" data-i18n="queueEmpty">No downloads yet.</div>
       </div>
     </section>
   </aside>

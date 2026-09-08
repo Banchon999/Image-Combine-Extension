@@ -24,14 +24,20 @@ async function setup() {
     get firstChild(){return this.children[0];}
     get textContent(){return this.ownText ?? this.children.map(c=>c.textContent).join('');}
     set textContent(value){this.ownText=String(value);this.children=[];}
-    setAttribute(key,value){this.attrs[key]=String(value);if(key==='id'){this.id=String(value);byId.set(this.id,this);}if(key==='value')this.value=String(value);if(key==='class')this.className=String(value);if(key==='data-view')this.dataset.view=String(value);}
+    getAttribute(key){return this.attrs[key]??null;}
+    setAttribute(key,value){this.attrs[key]=String(value);if(key==='id'){this.id=String(value);byId.set(this.id,this);}if(key==='value')this.value=String(value);if(key==='class')this.className=String(value);if(key.startsWith('data-'))this.dataset[key.slice(5).replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=String(value);}
     append(...children){for(let c of children){if(typeof c==='string'){const text=new Node();text.textContent=c;c=text;}c.parentElement=this;this.children.push(c);}}
     remove(){if(this.parentElement){const siblings=this.parentElement.children;siblings.splice(siblings.indexOf(this),1);}}
     addEventListener(name,fn){(this.events[name]??=[]).push(fn);}
+    focus(){this.focused=true;}
     async click(){if(this.disabled)return;for(const fn of this.events.click??[])await fn({target:this});}
   }
-  const document={body:new Node('body'),createElement:tag=>new Node(tag),getElementById:id=>byId.get(id),
-    querySelectorAll:selector=>[...byId.values()].filter(n=>String(n.className??'').split(' ').includes(selector.slice(1)))};
+  const document={body:new Node('body'),documentElement:new Node('html'),title:'Webtoon Downloader',createElement:tag=>new Node(tag),getElementById:id=>byId.get(id),
+    querySelectorAll:selector=>[...byId.values()].filter(n=>selector.startsWith('.')
+      ? String(n.className??'').split(' ').includes(selector.slice(1))
+      : selector==='[role="tab"]' ? n.attrs.role==='tab'
+      : selector==='[data-i18n]' ? Boolean(n.dataset.i18n)
+      : selector==='[data-i18n-placeholder]' ? Boolean(n.dataset.i18nPlaceholder) : false)};
   // IDs and tab/view attributes come from the shipped HTML, not hand-invented IDs.
   for(const match of html.matchAll(/<(\w+)\b([^>]*\bid="[^"]+"[^>]*)>/g)){
     const node=new Node(match[1]);
@@ -42,7 +48,7 @@ async function setup() {
   let raw={};let next=0;
   const store=createFollowingStore({get:async key=>structuredClone({[key]:raw[key]}),set:async patch=>{raw={...raw,...structuredClone(patch)};}},{token:()=>String(++next)});
   const calls=[];
-  const chrome={runtime:{onMessage:{addListener(){}},sendMessage:async({type,payload})=>{
+  const chrome={i18n:{getUILanguage:()=> 'en-US',getMessage:()=>''},runtime:{onMessage:{addListener(){}},sendMessage:async({type,payload})=>{
     calls.push({type,payload});
     try {
       let result;
@@ -60,6 +66,8 @@ async function setup() {
   const context={document,window:{matchMedia:()=>({matches:false,addEventListener(){}}),confirm:()=>true},chrome,
     MSG,STATUS,LANGUAGES,OUTPUT_FORMATS,describeSelection,toRangeSpec,buildSiteSearchUrl,STITCH_DEFAULTS,stitchOptions,stitchCodecLimits,
     initialSelection,validateChapterSelection,chapterIdentity,pendingChapters,FOLLOW_KEY,
+    localizeDocument:()=>{},t:(_key,_substitutions,fallback)=>fallback,initTabs:()=>{},
+    syncTabs:(root,current,pinned)=>{for(const tab of root.querySelectorAll('[role="tab"]')){tab.hidden=pinned&&tab.dataset.view==='queue';tab.setAttribute('aria-selected',String(tab.dataset.view===current));tab.setAttribute('tabindex',tab.dataset.view===current?'0':'-1');}},
     setTimeout,clearTimeout,URL,Blob};
   vm.createContext(context);
   vm.runInContext(source+'\nthis.testUI={renderSeries,refreshFollowing,state,showView};',context);
