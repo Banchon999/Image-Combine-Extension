@@ -6,5 +6,65 @@
   "extDescription": {
     "message": "ดาวน์โหลดตอนของเว็บตูนเป็น PDF, CBZ หรือไฟล์ภาพต้นฉบับ พร้อมการค้นหา เลือกช่วงตอน และดาวน์โหลดแบบขนาน",
     "description": "Extension description shown on the extensions page."
+  },
+  "appTitle": {
+    "message": "ตัวดาวน์โหลดเว็บตูน"
+  },
+  "tabSearch": {
+    "message": "ค้นหา"
+  },
+  "tabFollowing": {
+    "message": "ติดตาม"
+  },
+  "tabSeries": {
+    "message": "เรื่อง"
+  },
+  "tabQueue": {
+    "message": "คิว"
+  },
+  "openByUrl": {
+    "message": "เปิดด้วย URL"
+  },
+  "openButton": {
+    "message": "เปิด"
+  },
+  "pasteUrlHint": {
+    "message": "วางลิงก์เรื่องหรือตอนจากเว็บไซต์ที่รองรับ"
+  },
+  "searchSite": {
+    "message": "เว็บไซต์ที่ค้นหา"
+  },
+  "searchBy": {
+    "message": "ค้นหาด้วยชื่อเรื่อง / ผู้แต่ง"
+  },
+  "searchButton": {
+    "message": "ค้นหา"
+  },
+  "seeAllResults": {
+    "message": "ดูผลลัพธ์ทั้งหมดบนเว็บไซต์"
+  },
+  "followingTitle": {
+    "message": "เรื่องที่ติดตาม"
+  },
+  "followingHint": {
+    "message": "จำตอนที่มีอยู่ตอนเริ่มติดตาม แล้วกดเช็กหาตอนที่เพิ่มมา โดยไม่ดาวน์โหลดหรือซื้อให้อัตโนมัติ"
+  },
+  "checkAll": {
+    "message": "เช็กตอนใหม่ทั้งหมด"
+  },
+  "exportBackup": {
+    "message": "สำรองรายการ JSON"
+  },
+  "importBackup": {
+    "message": "นำเข้ารายการ"
+  },
+  "backupHint": {
+    "message": "ข้อมูลเก็บในเบราว์เซอร์นี้ โปรดสำรองก่อนลบหรือติดตั้งส่วนขยายใหม่"
+  },
+  "seriesEmpty": {
+    "message": "เลือกเรื่องจากหน้าค้นหา หรือวางลิงก์"
+  },
+  "queueEmpty": {
+    "message": "ยังไม่มีรายการดาวน์โหลด"
   }
 }

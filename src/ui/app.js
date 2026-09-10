@@ -15,6 +15,8 @@ import { buildSiteSearchUrl } from '../common/site-search.js';
 import { initialSelection, validateChapterSelection } from '../common/chapter-access.js';
 import { chapterIdentity, pendingChapters, FOLLOW_KEY } from '../common/following.js';
 import { STITCH_DEFAULTS, stitchOptions, stitchCodecLimits } from '../common/stitch-plan.js';
+import { localizeDocument, t } from './i18n.js';
+import { initTabs, syncTabs } from './tabs.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -98,11 +100,7 @@ function applyLayout() {
   const tabbed = pinnedQueue ? ['search', 'following', 'series'] : ['search', 'following', 'series', 'queue'];
   if (!tabbed.includes(activeView)) activeView = 'search';
 
-  for (const tab of document.querySelectorAll('.tab')) {
-    const isQueue = tab.dataset.view === 'queue';
-    tab.hidden = pinnedQueue && isQueue;
-    tab.setAttribute('aria-selected', String(tab.dataset.view === activeView));
-  }
+  syncTabs(document, activeView, pinnedQueue);
 
   for (const view of document.querySelectorAll('.view')) {
     const name = view.id.replace('view-', '');
@@ -543,7 +541,7 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
 function renderQueue() {
   const body = clear($('queue-body'));
   if (state.jobs.size === 0) {
-    body.append(el('div', { class: 'empty', text: 'No downloads yet.' }));
+    body.append(el('div', { class: 'empty', text: t('queueEmpty', undefined, 'No downloads yet.') }));
     return;
   }
 
@@ -568,7 +566,8 @@ function renderQueue() {
 
     for (const chapter of job.chapters ?? []) {
       const pct = chapter.total ? Math.round((chapter.done / chapter.total) * 100) : 0;
-      const bar = el('div', { class: 'bar' }, [el('i')]);
+      const bar = el('div', { class: 'bar', role: 'progressbar', 'aria-label': `Chapter ${chapter.number}`,
+        'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(chapter.status === STATUS.DONE ? 100 : pct) }, [el('i')]);
       bar.firstChild.style.width = `${chapter.status === STATUS.DONE ? 100 : pct}%`;
 
       card.append(
@@ -597,6 +596,7 @@ chrome.runtime.onMessage.addListener((message) => {
 });
 
 async function init() {
+  localizeDocument();
   state.settings = await send(MSG.GET_SETTINGS);
   initFollowing();
 
@@ -606,9 +606,7 @@ async function init() {
   $('search-lang').addEventListener('change', invalidateSearch);
   $('search-input').addEventListener('input', invalidateSearch);
 
-  for (const tab of document.querySelectorAll('.tab')) {
-    tab.addEventListener('click', () => showView(tab.dataset.view));
-  }
+  initTabs({ activate: showView });
   // Re-run on resize so dragging the window across the breakpoint does not
   // strand the queue in a hidden tab.
   WIDE.addEventListener('change', applyLayout);

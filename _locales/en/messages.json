@@ -6,5 +6,65 @@
   "extDescription": {
     "message": "Download webtoon chapters as PDF, CBZ or raw images, with search, chapter ranges and parallel fetching.",
     "description": "Extension description shown on the extensions page."
+  },
+  "appTitle": {
+    "message": "Webtoon Downloader"
+  },
+  "tabSearch": {
+    "message": "Search"
+  },
+  "tabFollowing": {
+    "message": "Following"
+  },
+  "tabSeries": {
+    "message": "Series"
+  },
+  "tabQueue": {
+    "message": "Queue"
+  },
+  "openByUrl": {
+    "message": "Open by URL"
+  },
+  "openButton": {
+    "message": "Open"
+  },
+  "pasteUrlHint": {
+    "message": "Paste a series or episode link from a supported site."
+  },
+  "searchSite": {
+    "message": "Search site"
+  },
+  "searchBy": {
+    "message": "Search by title / author"
+  },
+  "searchButton": {
+    "message": "Search"
+  },
+  "seeAllResults": {
+    "message": "See all results on the site"
+  },
+  "followingTitle": {
+    "message": "Following"
+  },
+  "followingHint": {
+    "message": "Remember existing chapters and check for additions. Nothing is downloaded or purchased automatically."
+  },
+  "checkAll": {
+    "message": "Check all"
+  },
+  "exportBackup": {
+    "message": "Export JSON"
+  },
+  "importBackup": {
+    "message": "Import"
+  },
+  "backupHint": {
+    "message": "Stored in this browser. Export a backup before removing or reinstalling the extension."
+  },
+  "seriesEmpty": {
+    "message": "Pick a series from Search, or paste a link."
+  },
+  "queueEmpty": {
+    "message": "No downloads yet."
   }
 }
