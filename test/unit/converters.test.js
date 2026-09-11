@@ -67,6 +67,11 @@ test('CBZ refuses to build nothing', () => {
   assert.throws(() => buildCbz([]), /empty CBZ/);
 });
 
+test('CBZ blob is typed application/octet-stream so browsers keep the .cbz name', () => {
+  const blob = buildCbz([{ name: '001.jpg', data: new Uint8Array([1]) }]);
+  assert.equal(blob.type, 'application/octet-stream');
+});
+
 /* ----------------------------------- PDF ---------------------------------- */
 
 test('inspectJpeg reads dimensions and component count', () => {

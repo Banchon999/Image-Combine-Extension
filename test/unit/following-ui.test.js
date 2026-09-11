@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import {MSG,STATUS} from '../../src/common/messages.js';
-import {DEFAULT_SETTINGS,LANGUAGES,OUTPUT_FORMATS} from '../../src/common/settings.js';
+import {DEFAULT_SETTINGS,LANGUAGES,OUTPUT_FORMATS,UI_LANGUAGES} from '../../src/common/settings.js';
 import {describeSelection,toRangeSpec} from '../../src/common/ranges.js';
 import {buildSiteSearchUrl} from '../../src/common/site-search.js';
 import {initialSelection,validateChapterSelection} from '../../src/common/chapter-access.js';
@@ -64,9 +64,9 @@ async function setup() {
     }catch(error){return {ok:false,error:error.message};}
   }},storage:{session:{get:async()=>({}),remove:async()=>{}},onChanged:{addListener(){}}}};
   const context={document,window:{matchMedia:()=>({matches:false,addEventListener(){}}),confirm:()=>true},chrome,
-    MSG,STATUS,LANGUAGES,OUTPUT_FORMATS,describeSelection,toRangeSpec,buildSiteSearchUrl,STITCH_DEFAULTS,stitchOptions,stitchCodecLimits,
+    MSG,STATUS,LANGUAGES,OUTPUT_FORMATS,UI_LANGUAGES,describeSelection,toRangeSpec,buildSiteSearchUrl,STITCH_DEFAULTS,stitchOptions,stitchCodecLimits,
     initialSelection,validateChapterSelection,chapterIdentity,pendingChapters,FOLLOW_KEY,
-    localizeDocument:()=>{},t:(_key,_substitutions,fallback)=>fallback,initTabs:()=>{},
+    localizeDocument:()=>{},applyUiLanguage:async()=>{},t:(_key,_substitutions,fallback)=>fallback,initTabs:()=>{},
     syncTabs:(root,current,pinned)=>{for(const tab of root.querySelectorAll('[role="tab"]')){tab.hidden=pinned&&tab.dataset.view==='queue';tab.setAttribute('aria-selected',String(tab.dataset.view===current));tab.setAttribute('tabindex',tab.dataset.view===current?'0':'-1');}},
     setTimeout,clearTimeout,URL,Blob};
   vm.createContext(context);

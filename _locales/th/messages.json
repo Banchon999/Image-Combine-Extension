@@ -7,64 +7,103 @@
     "message": "ดาวน์โหลดตอนของเว็บตูนเป็น PDF, CBZ หรือไฟล์ภาพต้นฉบับ พร้อมการค้นหา เลือกช่วงตอน และดาวน์โหลดแบบขนาน",
     "description": "Extension description shown on the extensions page."
   },
-  "appTitle": {
-    "message": "ตัวดาวน์โหลดเว็บตูน"
-  },
-  "tabSearch": {
-    "message": "ค้นหา"
-  },
-  "tabFollowing": {
-    "message": "ติดตาม"
-  },
-  "tabSeries": {
-    "message": "เรื่อง"
-  },
-  "tabQueue": {
-    "message": "คิว"
-  },
-  "openByUrl": {
-    "message": "เปิดด้วย URL"
-  },
-  "openButton": {
-    "message": "เปิด"
-  },
-  "pasteUrlHint": {
-    "message": "วางลิงก์เรื่องหรือตอนจากเว็บไซต์ที่รองรับ"
-  },
-  "searchSite": {
-    "message": "เว็บไซต์ที่ค้นหา"
-  },
-  "searchBy": {
-    "message": "ค้นหาด้วยชื่อเรื่อง / ผู้แต่ง"
-  },
-  "searchButton": {
-    "message": "ค้นหา"
-  },
-  "seeAllResults": {
-    "message": "ดูผลลัพธ์ทั้งหมดบนเว็บไซต์"
-  },
-  "followingTitle": {
-    "message": "เรื่องที่ติดตาม"
-  },
-  "followingHint": {
-    "message": "จำตอนที่มีอยู่ตอนเริ่มติดตาม แล้วกดเช็กหาตอนที่เพิ่มมา โดยไม่ดาวน์โหลดหรือซื้อให้อัตโนมัติ"
-  },
-  "checkAll": {
-    "message": "เช็กตอนใหม่ทั้งหมด"
-  },
-  "exportBackup": {
-    "message": "สำรองรายการ JSON"
-  },
-  "importBackup": {
-    "message": "นำเข้ารายการ"
-  },
-  "backupHint": {
-    "message": "ข้อมูลเก็บในเบราว์เซอร์นี้ โปรดสำรองก่อนลบหรือติดตั้งส่วนขยายใหม่"
-  },
-  "seriesEmpty": {
-    "message": "เลือกเรื่องจากหน้าค้นหา หรือวางลิงก์"
-  },
-  "queueEmpty": {
-    "message": "ยังไม่มีรายการดาวน์โหลด"
-  }
+  "appTitle": { "message": "ตัวดาวน์โหลดเว็บตูน" },
+  "tabSearch": { "message": "ค้นหา" },
+  "tabFollowing": { "message": "ติดตาม" },
+  "tabSeries": { "message": "เรื่อง" },
+  "tabQueue": { "message": "คิว" },
+  "openByUrl": { "message": "เปิดด้วย URL" },
+  "openButton": { "message": "เปิด" },
+  "pasteUrlHint": { "message": "วางลิงก์เรื่องหรือตอนจากเว็บไซต์ที่รองรับ" },
+  "searchSite": { "message": "เว็บไซต์ที่ค้นหา" },
+  "searchBy": { "message": "ค้นหาด้วยชื่อเรื่อง / ผู้แต่ง" },
+  "searchButton": { "message": "ค้นหา" },
+  "seeAllResults": { "message": "ดูผลลัพธ์ทั้งหมดบนเว็บไซต์" },
+  "followingTitle": { "message": "เรื่องที่ติดตาม" },
+  "followingHint": { "message": "จำตอนที่มีอยู่ตอนเริ่มติดตาม แล้วกดเช็กหาตอนที่เพิ่มมา โดยไม่ดาวน์โหลดหรือซื้อให้อัตโนมัติ" },
+  "checkAll": { "message": "เช็กตอนใหม่ทั้งหมด" },
+  "exportBackup": { "message": "สำรองรายการ JSON" },
+  "importBackup": { "message": "นำเข้ารายการ" },
+  "backupHint": { "message": "ข้อมูลเก็บในเบราว์เซอร์นี้ โปรดสำรองก่อนลบหรือติดตั้งส่วนขยายใหม่" },
+  "seriesEmpty": { "message": "เลือกเรื่องจากหน้าค้นหา หรือวางลิงก์" },
+  "queueEmpty": { "message": "ยังไม่มีรายการดาวน์โหลด" },
+
+  "uiLanguageLabel": { "message": "ภาษาหน้าจอ" },
+
+  "searchHintKorean": { "message": "ค้นหาชื่อเรื่อง/ผู้แต่งภาษาเกาหลี จะเปิดแท็บชั่วคราวแล้วปิดหลังอ่านผลแรก Kakao ค้นเฉพาะเว็บตูน การเข้าถึงบัญชีต้องเปิดเองในหน้าตอน" },
+  "searchHintWebtoon": { "message": "ค้นหาในภาษา WEBTOON ที่เลือก" },
+  "searchTypePrompt": { "message": "พิมพ์ชื่อเรื่องที่ต้องการค้นหา" },
+  "searching": { "message": "กำลังค้นหา…" },
+  "searchNoResults": { "message": "ไม่พบผลลัพธ์สำหรับ “$1” บนเว็บ/ภาษาที่เลือก", "placeholders": { "query": { "content": "$1" } } },
+  "searchResults": { "message": "$1 ผลลัพธ์", "placeholders": { "count": { "content": "$1" } } },
+  "searchResultsBatch": { "message": "$1 ผลลัพธ์ (ชุดแรกที่โหลด ดูเพิ่มบนเว็บไซต์)", "placeholders": { "count": { "content": "$1" } } },
+  "loadingChapters": { "message": "กำลังโหลดรายการตอน…" },
+
+  "followEmpty": { "message": "เปิดเรื่องจาก Search หรือ URL แล้วกด “ติดตามเรื่องนี้” เพื่อเริ่มบันทึก" },
+  "followThis": { "message": "ติดตามเรื่องนี้" },
+  "followedGoTab": { "message": "ติดตามแล้ว — ดูในแท็บติดตาม" },
+  "followAddFailed": { "message": "บันทึกไม่สำเร็จ: $1 (กดเพื่อลองใหม่)", "placeholders": { "error": { "content": "$1" } } },
+  "followFirstHint": { "message": "ครั้งแรกจะจำตอนที่มีอยู่ตอนนี้ทั้งหมดเป็นจุดเริ่มต้น ไม่ได้ถือว่าดาวน์โหลดตอนเหล่านั้นแล้ว" },
+  "followSelectedNewHint": { "message": "เลือกเฉพาะตอนใหม่ให้แล้ว หลังตรวจว่าโหลดสำเร็จ ให้กลับไปแท็บติดตามและกด “จัดการตอนที่แสดงแล้ว” การดาวน์โหลดล้มเหลวจะไม่ทำให้รายการตอนใหม่หาย" },
+  "followProgress": { "message": "บันทึกแล้วถึง #$1 → ล่าสุด #$2", "placeholders": { "old": { "content": "$1" }, "current": { "content": "$2" } } },
+  "followPending": { "message": "$1 ตอนใหม่ที่ยังไม่กดจัดการ: $2", "placeholders": { "count": { "content": "$1" }, "range": { "content": "$2" } } },
+  "followNoPending": { "message": "ไม่มีตอนใหม่ค้างอยู่" },
+  "followLastChecked": { "message": "เช็กสำเร็จล่าสุด: $1", "placeholders": { "when": { "content": "$1" } } },
+  "followNever": { "message": "ยังไม่เคยเช็ก" },
+  "followCheckFailed": { "message": "เช็กไม่สำเร็จ: $1 (เก็บรายการเดิมไว้)", "placeholders": { "error": { "content": "$1" } } },
+  "followStaleHint": { "message": "บางตอนที่เคยพบไม่อยู่ในรายการล่าสุด จึงยังเก็บสถานะค้างไว้ ไม่ถือว่าโหลดแล้ว" },
+  "followCheckNew": { "message": "เช็กตอนใหม่" },
+  "followPickNew": { "message": "เลือกโหลดตอนใหม่" },
+  "followOpen": { "message": "เปิดเรื่อง" },
+  "followMarkHandled": { "message": "จัดการตอนที่แสดงแล้ว" },
+  "followUnfollow": { "message": "เลิกติดตาม" },
+  "followCheckResult": { "message": "$1: $2 ตอนใหม่ค้างอยู่", "placeholders": { "title": { "content": "$1" }, "count": { "content": "$2" } } },
+  "followNoOpenable": { "message": "ไม่มีตอนใหม่ที่เปิดได้ในรายการล่าสุด" },
+  "followMarkConfirm": { "message": "นำ $1 ตอนที่แสดงออกจากรายการตอนใหม่ของ “$2”?\nทำหลังโหลดสำเร็จหรือเมื่อไม่ต้องการโหลด การกดนี้ไม่ใช่การตรวจว่าไฟล์ดาวน์โหลดสำเร็จแล้ว", "placeholders": { "count": { "content": "$1" }, "title": { "content": "$2" } } },
+  "followMarkedDone": { "message": "บันทึกว่าจัดการตอนที่แสดงแล้ว ตอนที่เข้ามาภายหลังจะยังค้างอยู่" },
+  "followUnfollowConfirm": { "message": "เลิกติดตาม “$1”? ประวัติการติดตามเรื่องนี้จะถูกลบ แต่ไฟล์ที่ดาวน์โหลดไว้ไม่ถูกลบ", "placeholders": { "title": { "content": "$1" } } },
+  "followExportDone": { "message": "ส่งไฟล์สำรองให้เบราว์เซอร์แล้ว เก็บไฟล์นี้ไว้ก่อนเปลี่ยน/ลบส่วนขยาย" },
+  "followCheckingProgress": { "message": "กำลังเช็ก $1/$2: $3", "placeholders": { "index": { "content": "$1" }, "total": { "content": "$2" }, "title": { "content": "$3" } } },
+  "followCheckedAll": { "message": "เช็กครบ $1 เรื่อง", "placeholders": { "total": { "content": "$1" } } },
+  "followCheckedFailed": { "message": " · ไม่สำเร็จ $1 เรื่อง ดูข้อความใต้เรื่อง", "placeholders": { "count": { "content": "$1" } } },
+  "backupTooLarge": { "message": "ไฟล์สำรองใหญ่เกิน 5 MB" },
+  "importResult": { "message": "นำเข้า $1 เรื่อง · ข้าม $2 เรื่องที่มีอยู่แล้ว โดยไม่ทับสถานะเดิม", "placeholders": { "added": { "content": "$1" }, "skipped": { "content": "$2" } } },
+
+  "chaptersAvailable": { "message": "มี $1 ตอน", "placeholders": { "count": { "content": "$1" } } },
+  "fmtPdf": { "message": "PDF" },
+  "fmtCbz": { "message": "CBZ (ไฟล์อ่านการ์ตูน)" },
+  "fmtZip": { "message": "ZIP (รวมรูปภาพ)" },
+  "fmtRaw": { "message": "รูปภาพแยกไฟล์" },
+  "noFreeChapters": { "message": "ไม่มีตอนฟรี ถ้าคุณมีสิทธิ์อยู่แล้ว ให้เปิดตัวเลือกบัญชี Kakao และกรอกหมายเลขตอนที่ต้องการ" },
+  "willRequest": { "message": "จะโหลด $1", "placeholders": { "what": { "content": "$1" } } },
+  "kakaoAuthNote": { "message": " Kakao ต้องอนุญาต $1 ตอนที่ไม่ฟรี การเปิดตัวเลือกนี้ไม่ได้ปลดล็อกให้", "placeholders": { "count": { "content": "$1" } } },
+  "lockedStrong": { "message": "$1 จาก $2 ตอนเป็นตอนฟรี ", "placeholders": { "free": { "content": "$1" }, "total": { "content": "$2" } } },
+  "lockedRest": { "message": "อีก $1 ตอนไม่ได้ระบุว่าฟรี (ไม่ใช่การตรวจสิทธิ์การซื้อของคุณ) โหมดปกติอนุญาตเฉพาะตอนฟรี", "placeholders": { "count": { "content": "$1" } } },
+  "kakaoAccessLabel": { "message": "ใช้สิทธิ์ Kakao ที่ฉันมีอยู่ (ซื้อแล้ว / เช่ายังไม่หมดอายุ)" },
+  "kakaoAccessHint": { "message": "ล็อกอิน Kakao และเปิดตอนในเบราว์เซอร์/โปรไฟล์เดียวกันก่อน ตัวเลือกนี้ขอแค่ข้อมูลสำหรับอ่าน ไม่ได้ซื้อตอน ไม่เรียก API ปลดล็อก/ตั๋ว และไม่ถอดรหัส DRM เริ่มจากตอนเดียวก่อน" },
+  "labelChapters": { "message": "ตอน" },
+  "labelSaveAs": { "message": "บันทึกเป็น" },
+  "labelOriginalQuality": { "message": "ภาพคุณภาพต้นฉบับ (ไฟล์ใหญ่ขึ้น)" },
+  "labelCleanup": { "message": "เขียนไฟล์ภาพดิบด้วย แล้วลบทิ้งหลังแปลงเสร็จ" },
+  "labelStitch": { "message": "ต่อภาพแนวตั้งแยกแต่ละตอน (Long images)" },
+  "downloadButton": { "message": "ดาวน์โหลด" },
+  "notFreePill": { "message": "ไม่ฟรี · ยังไม่ตรวจสิทธิ์" },
+  "chapterListSummary": { "message": "รายการตอน ($1)", "placeholders": { "count": { "content": "$1" } } },
+
+  "bundleSeries": { "message": "รวมทุกตอนที่เลือกเป็นไฟล์เดียวต่อเรื่อง (ตั้งชื่อตามช่วงตอน)" },
+  "bundleHintOn": { "message": "เช่น “ชื่อเรื่อง 1-25.cbz” ทั้งเรื่องในไฟล์เดียว แต่ละตอนอยู่ในโฟลเดอร์ย่อยภายใน ไฟล์ใหญ่มากอาจสร้างไม่ได้" },
+  "bundleHintOff": { "message": "ใช้ได้เฉพาะ CBZ/ZIP และต้องปิดการต่อภาพแนวตั้ง" },
+
+  "stitchModeSmart": { "message": "Smart — คำนวณความสูงให้" },
+  "stitchModeHeight": { "message": "กำหนดความสูงสูงสุดต่อภาพ" },
+  "stitchModeCount": { "message": "กำหนดจำนวนภาพ + ความสูงสูงสุด" },
+  "stitchFieldMode": { "message": "วิธีแบ่งภาพ" },
+  "stitchFieldHeight": { "message": "ความสูงสูงสุดต่อภาพ (px) — ภาพสุดท้ายอาจสั้นกว่า" },
+  "stitchFieldCount": { "message": "จำนวนภาพต่อตอน — แบ่งความสูงใกล้เคียงกัน" },
+  "stitchFieldWidth": { "message": "ความกว้าง (px) — 0 = ใช้ความกว้างภาพต้นฉบับที่แคบที่สุด" },
+  "stitchFieldMime": { "message": "ชนิดภาพหลังต่อ" },
+  "stitchFieldQuality": { "message": "คุณภาพ JPG/WebP (1–100)" },
+  "stitchHintDesktop": { "message": "เพดานเดสก์ท็อป: กว้าง/สูง ≤ $1 px และพื้นที่รวม ≤ 268,435,456 พิกเซล (เฉพาะ canvas อาจใช้ RAM ถึง 1 GiB) ใช้ค่าเดียวกันทุกอุปกรณ์ ไม่ได้ตรวจ RAM ว่างหรือรับประกันว่าเครื่องจะทำไหว; WebP จำกัด 16,383 px ต่อด้าน ถ้าจะใช้ 18,000 ให้เลือก JPG/PNG; Smart ใช้เพดานนี้ในการแบ่ง ไม่ตัดตามช่องคำพูด ภาพถูกปรับความกว้างและพื้นหลังโปร่งใสเป็นสีขาว ถ้าจำนวนภาพน้อยเกินไปจะแจ้งขั้นต่ำ ไม่ทิ้งภาพส่วนท้าย ", "placeholders": { "max": { "content": "$1" } } },
+  "stitchHintPdf": { "message": "PDF ใช้ภาพ JPG ภายใน โดยใช้คุณภาพที่ตั้งไว้" },
+  "stitchHintArchive": { "message": "เลือก Save as เป็น Raw images เพื่อบันทึกภาพแยก หรือ ZIP/CBZ เพื่อรวมเป็นไฟล์เดียว" }
 }

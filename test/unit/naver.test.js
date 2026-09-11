@@ -73,6 +73,32 @@ test('Naver uses nextPage, retains actual episode numbers and sorts them', async
   assert.equal(series.chapters[1].url, 'https://comic.naver.com/webtoon/detail?titleId=828715&no=95');
 });
 
+test('Naver falls back to the list-page og:title when the info endpoint omits a title', async () => {
+  const docs = [];
+  const series = await naverAdapter.getSeries({ seriesId: '831555' }, {
+    fetchJson: async url => url.includes('/info?')
+      ? {} // info reachable but carries no titleName
+      : { articleList: [{ no: 1, subtitle: '1화' }], pageInfo: { nextPage: null } },
+    fetchDoc: async url => {
+      docs.push(url);
+      return { querySelector: sel => sel.includes('og:title') ? { getAttribute: () => 'EX-아이돌 리포트' } : null };
+    },
+  });
+  assert.equal(series.title, 'EX-아이돌 리포트');
+  assert.equal(docs[0], 'https://comic.naver.com/webtoon/list?titleId=831555');
+});
+
+test('Naver uses the series id only when neither info nor the list page give a title', async () => {
+  const series = await naverAdapter.getSeries({ seriesId: '42' }, {
+    fetchJson: async url => {
+      if (url.includes('/info?')) throw new Error('HTTP 403');
+      return { articleList: [{ no: 1 }], pageInfo: { nextPage: null } };
+    },
+    fetchDoc: async () => { throw new Error('network'); },
+  });
+  assert.equal(series.title, 'NAVER 42');
+});
+
 test('Naver rejects repeated pagination rather than silently claiming a complete list', async () => {
   await assert.rejects(naverAdapter.getSeries({seriesId:'1'}, {
     fetchJson: async url => url.includes('/info?') ? {} : {articleList:[{no:1}],pageInfo:{nextPage:2}},

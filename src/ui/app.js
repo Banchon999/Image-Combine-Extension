@@ -9,13 +9,13 @@
  */
 
 import { MSG, STATUS } from '../common/messages.js';
-import { LANGUAGES, OUTPUT_FORMATS } from '../common/settings.js';
+import { LANGUAGES, OUTPUT_FORMATS, UI_LANGUAGES } from '../common/settings.js';
 import { describeSelection, toRangeSpec } from '../common/ranges.js';
 import { buildSiteSearchUrl } from '../common/site-search.js';
 import { initialSelection, validateChapterSelection } from '../common/chapter-access.js';
 import { chapterIdentity, pendingChapters, FOLLOW_KEY } from '../common/following.js';
 import { STITCH_DEFAULTS, stitchOptions, stitchCodecLimits } from '../common/stitch-plan.js';
-import { localizeDocument, t } from './i18n.js';
+import { applyUiLanguage, t } from './i18n.js';
 import { initTabs, syncTabs } from './tabs.js';
 
 const $ = (id) => document.getElementById(id);
@@ -144,7 +144,7 @@ function renderFollowing() {
   $('follow-check-all').disabled = followingBusy || !state.followed.length;
   $('follow-import').disabled = followingBusy;
   if (!state.followed.length) {
-    body.append(el('div',{class:'empty',text:'เปิดเรื่องจาก Search หรือ URL แล้วกด “ติดตามเรื่องนี้” เพื่อเริ่มบันทึก'}));
+    body.append(el('div',{class:'empty',text:t('followEmpty',undefined,'เปิดเรื่องจาก Search หรือ URL แล้วกด “ติดตามเรื่องนี้” เพื่อเริ่มบันทึก')}));
   }
   for (const entry of state.followed) {
     const pending = pendingChapters(entry);
@@ -157,43 +157,43 @@ function renderFollowing() {
     row.append(el('div',{class:'series-head'},[
       thumb(entry.cover,entry.title), el('div',{},[
         el('h2',{text:entry.title}),
-        el('div',{class:'sub',text:`${entry.adapterId} · ${entry.ref.lang} · บันทึกแล้วถึง #${oldMax} → ล่าสุด #${currentMax}`}),
-        el('div',{text:pending.length ? `${pending.length} ตอนใหม่ที่ยังไม่กดจัดการแล้ว: ${toRangeSpec(pending.map(c=>c.number))}` : 'ไม่มีตอนใหม่ค้างอยู่'}),
-        el('div',{class:'hint',text:`เช็กสำเร็จล่าสุด: ${entry.lastCheckedAt ? new Date(entry.lastCheckedAt).toLocaleString() : 'ยังไม่เคยเช็ก'}`}),
+        el('div',{class:'sub',text:`${entry.adapterId} · ${entry.ref.lang} · ${t('followProgress',[oldMax,currentMax],`บันทึกแล้วถึง #${oldMax} → ล่าสุด #${currentMax}`)}`}),
+        el('div',{text:pending.length ? t('followPending',[pending.length,toRangeSpec(pending.map(c=>c.number))],`${pending.length} ตอนใหม่ที่ยังไม่กดจัดการแล้ว: ${toRangeSpec(pending.map(c=>c.number))}`) : t('followNoPending',undefined,'ไม่มีตอนใหม่ค้างอยู่')}),
+        el('div',{class:'hint',text:t('followLastChecked',[entry.lastCheckedAt ? new Date(entry.lastCheckedAt).toLocaleString() : t('followNever',undefined,'ยังไม่เคยเช็ก')],`เช็กสำเร็จล่าสุด: ${entry.lastCheckedAt ? new Date(entry.lastCheckedAt).toLocaleString() : 'ยังไม่เคยเช็ก'}`)}),
       ]),
     ]));
-    if (entry.lastError) row.append(el('div',{class:'notice error',text:`เช็กไม่สำเร็จ: ${entry.lastError} (เก็บรายการเดิมไว้)`}));
-    if (pending.some(c => !available.has(c.id))) row.append(el('p',{class:'hint',text:'บางตอนที่เคยพบไม่อยู่ในรายการล่าสุด จึงยังเก็บสถานะค้างไว้ ไม่ถือว่าโหลดแล้ว'}));
+    if (entry.lastError) row.append(el('div',{class:'notice error',text:t('followCheckFailed',[entry.lastError],`เช็กไม่สำเร็จ: ${entry.lastError} (เก็บรายการเดิมไว้)`)}));
+    if (pending.some(c => !available.has(c.id))) row.append(el('p',{class:'hint',text:t('followStaleHint',undefined,'บางตอนที่เคยพบไม่อยู่ในรายการล่าสุด จึงยังเก็บสถานะค้างไว้ ไม่ถือว่าโหลดแล้ว')}));
     const actions = el('div',{class:'follow-actions'});
     const action = (label, work, disabled = false) => {
       const button = el('button',{text:label,onclick:()=>followAction(work)});
       button.disabled = followingBusy || disabled;
       actions.append(button);
     };
-    action('เช็กตอนใหม่',async()=>{
+    action(t('followCheckNew',undefined,'เช็กตอนใหม่'),async()=>{
       const {entry:updated} = await send(MSG.FOLLOW_CHECK,{id:entry.id});
-      notice($('following-status'),`${updated.title}: ${pendingChapters(updated).length} ตอนใหม่ค้างอยู่`);
+      notice($('following-status'),t('followCheckResult',[updated.title,pendingChapters(updated).length],`${updated.title}: ${pendingChapters(updated).length} ตอนใหม่ค้างอยู่`));
     });
-    action('เลือกโหลดตอนใหม่',async()=>{
+    action(t('followPickNew',undefined,'เลือกโหลดตอนใหม่'),async()=>{
       const {entry:updated,result} = await send(MSG.FOLLOW_CHECK,{id:entry.id});
       const ids = new Set(pendingChapters(updated).map(c => c.id));
       const chapters = result.series.chapters.filter(c=>ids.has(chapterIdentity(result.adapterId,c)));
       if (!chapters.length) {
-        notice($('following-status'),'ไม่มีตอนใหม่ที่เปิดได้ในรายการล่าสุด');
+        notice($('following-status'),t('followNoOpenable',undefined,'ไม่มีตอนใหม่ที่เปิดได้ในรายการล่าสุด'));
         return;
       }
       state.current = result;
       showView('series');
       renderSeries(result,{selection:toRangeSpec(chapters.map(c=>c.number)),followingTitle:updated.title});
     });
-    action('เปิดเรื่อง',()=>openSeries({adapterId:entry.adapterId,ref:entry.ref}));
-    action('จัดการตอนที่แสดงแล้ว',async()=>{
-      if (!window.confirm(`นำ ${pending.length} ตอนที่แสดงออกจากรายการตอนใหม่ของ “${entry.title}”?\nทำหลังโหลดสำเร็จหรือเมื่อไม่ต้องการโหลด การกดนี้ไม่ใช่การตรวจว่าไฟล์ดาวน์โหลดสำเร็จแล้ว`)) return;
+    action(t('followOpen',undefined,'เปิดเรื่อง'),()=>openSeries({adapterId:entry.adapterId,ref:entry.ref}));
+    action(t('followMarkHandled',undefined,'จัดการตอนที่แสดงแล้ว'),async()=>{
+      if (!window.confirm(t('followMarkConfirm',[pending.length,entry.title],`นำ ${pending.length} ตอนที่แสดงออกจากรายการตอนใหม่ของ “${entry.title}”?\nทำหลังโหลดสำเร็จหรือเมื่อไม่ต้องการโหลด การกดนี้ไม่ใช่การตรวจว่าไฟล์ดาวน์โหลดสำเร็จแล้ว`))) return;
       await send(MSG.FOLLOW_HANDLED,{id:entry.id,ids:pending.map(c=>c.id)});
-      notice($('following-status'),'บันทึกว่าจัดการตอนที่แสดงแล้ว ตอนที่เข้ามาภายหลังจะยังค้างอยู่');
+      notice($('following-status'),t('followMarkedDone',undefined,'บันทึกว่าจัดการตอนที่แสดงแล้ว ตอนที่เข้ามาภายหลังจะยังค้างอยู่'));
     },!pending.length);
-    action('เลิกติดตาม',async()=>{
-      if (!window.confirm(`เลิกติดตาม “${entry.title}”? ประวัติการติดตามเรื่องนี้จะถูกลบ แต่ไฟล์ที่ดาวน์โหลดไว้ไม่ถูกลบ`)) return;
+    action(t('followUnfollow',undefined,'เลิกติดตาม'),async()=>{
+      if (!window.confirm(t('followUnfollowConfirm',[entry.title],`เลิกติดตาม “${entry.title}”? ประวัติการติดตามเรื่องนี้จะถูกลบ แต่ไฟล์ที่ดาวน์โหลดไว้ไม่ถูกลบ`))) return;
       await send(MSG.FOLLOW_REMOVE,{id:entry.id});
     });
     row.append(actions);
@@ -207,7 +207,7 @@ async function exportFollowing() {
     const url = URL.createObjectURL(new Blob([JSON.stringify(backup)],{type:'application/json'}));
     try {
       await chrome.downloads.download({url,filename:'webtoon-following-backup.json',conflictAction:'uniquify',saveAs:true});
-      notice($('following-status'),'ส่งไฟล์สำรองให้เบราว์เซอร์แล้ว เก็บไฟล์นี้ไว้ก่อนเปลี่ยน/ลบส่วนขยาย');
+      notice($('following-status'),t('followExportDone',undefined,'ส่งไฟล์สำรองให้เบราว์เซอร์แล้ว เก็บไฟล์นี้ไว้ก่อนเปลี่ยน/ลบส่วนขยาย'));
     } finally { setTimeout(()=>URL.revokeObjectURL(url),60000); }
   } catch (error) { notice($('following-status'),error.message,'error'); }
 }
@@ -217,11 +217,11 @@ function initFollowing() {
     let failed = 0;
     const entries = [...state.followed];
     for (let i=0;i<entries.length;i++) {
-      notice($('following-status'),`กำลังเช็ก ${i+1}/${entries.length}: ${entries[i].title}`);
+      notice($('following-status'),t('followCheckingProgress',[i+1,entries.length,entries[i].title],`กำลังเช็ก ${i+1}/${entries.length}: ${entries[i].title}`));
       try { await send(MSG.FOLLOW_CHECK,{id:entries[i].id}); }
       catch { failed++; }
     }
-    notice($('following-status'),`เช็กครบ ${entries.length} เรื่อง${failed ? ` · ไม่สำเร็จ ${failed} เรื่อง ดูข้อความใต้เรื่อง` : ''}`);
+    notice($('following-status'),t('followCheckedAll',[entries.length],`เช็กครบ ${entries.length} เรื่อง`)+(failed ? t('followCheckedFailed',[failed],` · ไม่สำเร็จ ${failed} เรื่อง ดูข้อความใต้เรื่อง`) : ''));
   }));
   $('follow-export').addEventListener('click',exportFollowing);
   $('follow-import').addEventListener('click',()=>$('follow-import-file').click());
@@ -230,10 +230,10 @@ function initFollowing() {
     event.target.value = '';
     if (!file) return;
     followAction(async()=>{
-      if (file.size > 5*1024*1024) throw new Error('ไฟล์สำรองใหญ่เกิน 5 MB');
+      if (file.size > 5*1024*1024) throw new Error(t('backupTooLarge',undefined,'ไฟล์สำรองใหญ่เกิน 5 MB'));
       const backup = JSON.parse(await file.text());
       const result = await send(MSG.FOLLOW_IMPORT,{backup});
-      notice($('following-status'),`นำเข้า ${result.added} เรื่อง · ข้าม ${result.skipped} เรื่องที่มีอยู่แล้ว โดยไม่ทับสถานะเดิม`);
+      notice($('following-status'),t('importResult',[result.added,result.skipped],`นำเข้า ${result.added} เรื่อง · ข้าม ${result.skipped} เรื่องที่มีอยู่แล้ว โดยไม่ทับสถานะเดิม`));
     });
   });
   chrome.storage.onChanged.addListener((changes,area)=>{
@@ -268,8 +268,8 @@ function selectSearchSite() {
   select.value = korean ? 'ko' : webtoonLanguage;
   $('search-input').placeholder = korean ? '화산귀환 / 나 혼자만 레벨업' : 'Tower of God';
   $('search-hint').textContent = korean
-    ? 'Search Korean titles/authors. Opens a temporary tab and closes it after reading the first results. Kakao searches webtoons only; account access is opt-in on the chapter page.'
-    : 'Search the selected WEBTOON language.';
+    ? t('searchHintKorean', undefined, 'Search Korean titles/authors. Opens a temporary tab and closes it after reading the first results. Kakao searches webtoons only; account access is opt-in on the chapter page.')
+    : t('searchHintWebtoon', undefined, 'Search the selected WEBTOON language.');
   invalidateSearch();
 }
 
@@ -284,11 +284,11 @@ async function runSearch() {
   $('search-external').hidden = true;
 
   if (!query) {
-    notice(status, 'Type a title to search for.');
+    notice(status, t('searchTypePrompt', undefined, 'Type a title to search for.'));
     return;
   }
 
-  clear(status).append(el('div', { class: 'notice' }, [el('span', { class: 'spinner' }), ' Searching...']));
+  clear(status).append(el('div', { class: 'notice' }, [el('span', { class: 'spinner' }), ` ${t('searching', undefined, 'Searching…')}`]));
   searching = true;
   $('search-go').disabled = true;
   if (adapterId !== 'webtoons') {
@@ -301,10 +301,12 @@ async function runSearch() {
     if (revision !== searchRevision) return;
     clear(status);
     if (!found.length) {
-      notice(status, `Nothing found for "${query}" on the selected site/language.`);
+      notice(status, t('searchNoResults', [query], `Nothing found for "${query}" on the selected site/language.`));
       return;
     }
-    notice(status, `${found.length} results${adapterId === 'webtoons' ? '' : ' (first loaded batch; see the site for more)'}.`);
+    notice(status, adapterId === 'webtoons'
+      ? t('searchResults', [found.length], `${found.length} results.`)
+      : t('searchResultsBatch', [found.length], `${found.length} results (first loaded batch; see the site for more).`));
     for (const item of found) {
       results.append(
         el('button', { class: 'card', onclick: () => openSeries({ url: item.url }) }, [
@@ -329,7 +331,7 @@ async function runSearch() {
 async function openSeries({ url, adapterId, ref }) {
   showView('series');
   const body = $('series-body');
-  clear(body).append(el('div', { class: 'notice' }, [el('span', { class: 'spinner' }), ' Loading chapters...']));
+  clear(body).append(el('div', { class: 'notice' }, [el('span', { class: 'spinner' }), ` ${t('loadingChapters', undefined, 'Loading chapters…')}`]));
 
   try {
     const result = await send(MSG.GET_SERIES, { url, adapterId, ref });
@@ -351,23 +353,23 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
       el('div', {}, [
         el('h2', { text: series.title }),
         el('div', { class: 'sub', text: series.author || '' }),
-        el('div', { class: 'sub', text: `${series.chapters.length} chapters available` }),
+        el('div', { class: 'sub', text: t('chaptersAvailable', [series.chapters.length], `${series.chapters.length} chapters available`) }),
       ]),
     ]),
   );
 
-  const followButton = el('button',{text:'ติดตามเรื่องนี้',onclick:async()=>{
+  const followButton = el('button',{text:t('followThis',undefined,'ติดตามเรื่องนี้'),onclick:async()=>{
     followButton.disabled = true;
     try {
       await send(MSG.FOLLOW_ADD,{series,adapterId,ref});
-      followButton.textContent = 'ติดตามแล้ว — ดูในแท็บติดตาม';
+      followButton.textContent = t('followedGoTab',undefined,'ติดตามแล้ว — ดูในแท็บติดตาม');
     } catch (error) {
-      followButton.textContent = `บันทึกไม่สำเร็จ: ${error.message} (กดเพื่อลองใหม่)`;
+      followButton.textContent = t('followAddFailed',[error.message],`บันทึกไม่สำเร็จ: ${error.message} (กดเพื่อลองใหม่)`);
       followButton.disabled = false;
     }
   }});
-  body.append(followButton,el('p',{class:'hint',text:'ครั้งแรกจะจำตอนที่มีอยู่ตอนนี้ทั้งหมดเป็นจุดเริ่มต้น ไม่ได้ถือว่าดาวน์โหลดตอนเหล่านั้นแล้ว'}));
-  if (options.followingTitle) body.append(el('div',{class:'notice',text:'เลือกเฉพาะตอนใหม่ให้แล้ว หลังตรวจว่าโหลดสำเร็จ ให้กลับไปแท็บติดตามและกด “จัดการตอนที่แสดงแล้ว” การดาวน์โหลดล้มเหลวจะไม่ทำให้รายการตอนใหม่หาย'}));
+  body.append(followButton,el('p',{class:'hint',text:t('followFirstHint',undefined,'ครั้งแรกจะจำตอนที่มีอยู่ตอนนี้ทั้งหมดเป็นจุดเริ่มต้น ไม่ได้ถือว่าดาวน์โหลดตอนเหล่านั้นแล้ว')}));
+  if (options.followingTitle) body.append(el('div',{class:'notice',text:t('followSelectedNewHint',undefined,'เลือกเฉพาะตอนใหม่ให้แล้ว หลังตรวจว่าโหลดสำเร็จ ให้กลับไปแท็บติดตามและกด “จัดการตอนที่แสดงแล้ว” การดาวน์โหลดล้มเหลวจะไม่ทำให้รายการตอนใหม่หาย')}));
 
   /*
    * isFree describes the catalog, not this account's purchase entitlement.
@@ -387,7 +389,12 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
 
   const format = el('select', { id: 'format-select' });
   for (const value of OUTPUT_FORMATS) {
-    const label = { pdf: 'PDF', cbz: 'CBZ (comic archive)', zip: 'ZIP (images archive)', raw: 'Raw images' }[value];
+    const label = {
+      pdf: t('fmtPdf', undefined, 'PDF'),
+      cbz: t('fmtCbz', undefined, 'CBZ (comic archive)'),
+      zip: t('fmtZip', undefined, 'ZIP (images archive)'),
+      raw: t('fmtRaw', undefined, 'Raw images'),
+    }[value];
     format.append(el('option', { value, text: label, ...(state.settings.format === value ? { selected: 'selected' } : {}) }));
   }
 
@@ -396,6 +403,22 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
 
   const cleanup = el('input', { type: 'checkbox', id: 'cleanup-toggle' });
   cleanup.checked = state.settings.writeRawThenClean;
+
+  const bundle = el('input', { type: 'checkbox', id: 'bundle-toggle' });
+  bundle.checked = state.settings.bundleSeries;
+  const bundleLabel = el('label', { class: 'checkbox' }, [bundle,
+    el('span', { text: t('bundleSeries', undefined, 'รวมทุกตอนที่เลือกเป็นไฟล์เดียวต่อเรื่อง (ตั้งชื่อตามช่วงตอน)') })]);
+  const bundleHint = el('p', { class: 'hint' });
+  // Bundling concatenates every chapter in memory, so it only applies to the
+  // archive formats and never to stitching (which is itself whole-chapter work).
+  const bundleApplies = () => (format.value === 'cbz' || format.value === 'zip') && !stitchToggle.checked;
+  const refreshBundle = () => {
+    const ok = bundleApplies();
+    bundle.disabled = !ok;
+    bundleHint.textContent = ok
+      ? t('bundleHintOn', undefined, 'เช่น “ชื่อเรื่อง 1-25.cbz” ทั้งเรื่องในไฟล์เดียว แต่ละตอนอยู่ในโฟลเดอร์ย่อยภายใน ไฟล์ใหญ่มากอาจสร้างไม่ได้')
+      : t('bundleHintOff', undefined, 'ใช้ได้เฉพาะ CBZ/ZIP และต้องปิดการต่อภาพแนวตั้ง');
+  };
 
   const stitchSettings={...STITCH_DEFAULTS,...state.settings};
   const stitchToggle=el('input',{type:'checkbox',id:'stitch-toggle'});
@@ -406,19 +429,19 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
     for(const [key,label] of choices)node.append(el('option',{value:key,text:label}));
     node.value=value;return node;
   };
-  const stitchMode=select('stitch-mode',[['smart','Smart — คำนวณความสูงให้'],['height','กำหนดความสูงสูงสุดต่อภาพ'],['count','กำหนดจำนวนภาพ + ความสูงสูงสุด']],stitchSettings.stitchMode);
+  const stitchMode=select('stitch-mode',[['smart',t('stitchModeSmart',undefined,'Smart — คำนวณความสูงให้')],['height',t('stitchModeHeight',undefined,'กำหนดความสูงสูงสุดต่อภาพ')],['count',t('stitchModeCount',undefined,'กำหนดจำนวนภาพ + ความสูงสูงสุด')]],stitchSettings.stitchMode);
   const stitchHeight=el('input',{id:'stitch-height',type:'number',min:1,max:32767,step:1,value:stitchSettings.stitchHeight});
   const stitchCount=el('input',{id:'stitch-count',type:'number',min:1,max:2000,step:1,value:stitchSettings.stitchCount});
   const stitchWidth=el('input',{id:'stitch-width',type:'number',min:0,max:32767,step:1,value:stitchSettings.stitchWidth});
   const stitchMime=select('stitch-mime',[['image/jpeg','JPG'],['image/png','PNG (lossless)'],['image/webp','WebP']],stitchSettings.stitchMime);
   const stitchQuality=el('input',{id:'stitch-quality',type:'number',min:1,max:100,step:1,value:stitchSettings.stitchQuality});
   const field=(title,node)=>el('label',{class:'field'},[el('span',{text:title}),node]);
-  const heightField=field('ความสูงสูงสุดต่อภาพ (px) — ภาพสุดท้ายอาจสั้นกว่า',stitchHeight);
-  const countField=field('จำนวนภาพต่อตอน — แบ่งความสูงใกล้เคียงกัน',stitchCount);
+  const heightField=field(t('stitchFieldHeight',undefined,'ความสูงสูงสุดต่อภาพ (px) — ภาพสุดท้ายอาจสั้นกว่า'),stitchHeight);
+  const countField=field(t('stitchFieldCount',undefined,'จำนวนภาพต่อตอน — แบ่งความสูงใกล้เคียงกัน'),stitchCount);
   const stitchHint=el('p',{class:'hint'});
-  stitchPanel.append(field('วิธีแบ่งภาพ',stitchMode),heightField,countField,
-    field('ความกว้าง (px) — 0 = ใช้ความกว้างภาพต้นฉบับที่แคบที่สุด',stitchWidth),
-    field('ชนิดภาพหลังต่อ',stitchMime),field('คุณภาพ JPG/WebP (1–100)',stitchQuality),stitchHint);
+  stitchPanel.append(field(t('stitchFieldMode',undefined,'วิธีแบ่งภาพ'),stitchMode),heightField,countField,
+    field(t('stitchFieldWidth',undefined,'ความกว้าง (px) — 0 = ใช้ความกว้างภาพต้นฉบับที่แคบที่สุด'),stitchWidth),
+    field(t('stitchFieldMime',undefined,'ชนิดภาพหลังต่อ'),stitchMime),field(t('stitchFieldQuality',undefined,'คุณภาพ JPG/WebP (1–100)'),stitchQuality),stitchHint);
   const getStitchSettings=()=>({stitchEnabled:stitchToggle.checked,stitchMode:stitchMode.value,
     stitchHeight:Number(stitchHeight.value),stitchCount:Number(stitchCount.value),stitchWidth:Number(stitchWidth.value),
     stitchMime:stitchMime.value,stitchQuality:Number(stitchQuality.value)});
@@ -431,19 +454,20 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
     const limits=stitchCodecLimits(format.value==='pdf'?'image/jpeg':stitchMime.value);
     stitchHeight.setAttribute('max',limits.maxHeight);
     stitchWidth.setAttribute('max',limits.maxWidth);
-    stitchHint.textContent=`เพดานเดสก์ท็อป: กว้าง/สูง ≤ ${limits.maxWidth.toLocaleString()} px และพื้นที่รวม ≤ 268,435,456 พิกเซล (เฉพาะ canvas อาจใช้ RAM ถึง 1 GiB) ใช้ค่าเดียวกันทุกอุปกรณ์ ไม่ได้ตรวจ RAM ว่างหรือรับประกันว่าเครื่องจะทำไหว; WebP จำกัด 16,383 px ต่อด้าน ถ้าจะใช้ 18,000 ให้เลือก JPG/PNG; Smart ใช้เพดานนี้ในการแบ่ง ไม่ตัดตามช่องคำพูด ภาพถูกปรับความกว้างและพื้นหลังโปร่งใสเป็นสีขาว ถ้าจำนวนภาพน้อยเกินไปจะแจ้งขั้นต่ำ ไม่ทิ้งภาพส่วนท้าย `+
-      (format.value==='pdf'?'PDF ใช้ภาพ JPG ภายใน โดยใช้คุณภาพที่ตั้งไว้':'เลือก Save as เป็น Raw images เพื่อบันทึกภาพแยก หรือ ZIP/CBZ เพื่อรวมเป็นไฟล์เดียว');
+    const maxWidth=limits.maxWidth.toLocaleString();
+    stitchHint.textContent=t('stitchHintDesktop',[maxWidth],`เพดานเดสก์ท็อป: กว้าง/สูง ≤ ${maxWidth} px และพื้นที่รวม ≤ 268,435,456 พิกเซล (เฉพาะ canvas อาจใช้ RAM ถึง 1 GiB) ใช้ค่าเดียวกันทุกอุปกรณ์ ไม่ได้ตรวจ RAM ว่างหรือรับประกันว่าเครื่องจะทำไหว; WebP จำกัด 16,383 px ต่อด้าน ถ้าจะใช้ 18,000 ให้เลือก JPG/PNG; Smart ใช้เพดานนี้ในการแบ่ง ไม่ตัดตามช่องคำพูด ภาพถูกปรับความกว้างและพื้นหลังโปร่งใสเป็นสีขาว ถ้าจำนวนภาพน้อยเกินไปจะแจ้งขั้นต่ำ ไม่ทิ้งภาพส่วนท้าย `)+
+      (format.value==='pdf'?t('stitchHintPdf',undefined,'PDF ใช้ภาพ JPG ภายใน โดยใช้คุณภาพที่ตั้งไว้'):t('stitchHintArchive',undefined,'เลือก Save as เป็น Raw images เพื่อบันทึกภาพแยก หรือ ZIP/CBZ เพื่อรวมเป็นไฟล์เดียว'));
   };
 
   const summary = el('p', { class: 'hint', text: '' });
-  const start = el('button', { class: 'primary', text: 'Download', style: 'width:100%' });
+  const start = el('button', { class: 'primary', text: t('downloadButton', undefined, 'Download'), style: 'width:100%' });
   const accountAccess = el('input', { type: 'checkbox', id: 'account-access-toggle' });
   // Always off when opening a series: this choice is explicit for each job.
   accountAccess.checked = false;
 
   const refreshSummary = () => {
     if (downloadable.length === 0 && !(adapterId === 'kakao' && accountAccess.checked)) {
-      summary.textContent = 'No free chapters. If you already have access, enable the Kakao account option and enter specific chapter numbers.';
+      summary.textContent = t('noFreeChapters', undefined, 'No free chapters. If you already have access, enable the Kakao account option and enter specific chapter numbers.');
       start.disabled = true;
       return;
     }
@@ -451,8 +475,8 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
       if(stitchToggle.checked)stitchOptions({...getStitchSettings(),format:format.value});
       const { chosen, nonFreeCount } = validateChapterSelection(series.chapters, selection.value,
         adapterId === 'kakao' && accountAccess.checked);
-      summary.textContent = `Will request ${describeSelection(chosen)}.` +
-        (nonFreeCount ? ` Kakao must authorize ${nonFreeCount} non-free chapter(s); enabling this option does not unlock them.` : '');
+      summary.textContent = t('willRequest', [describeSelection(chosen)], `Will request ${describeSelection(chosen)}.`) +
+        (nonFreeCount ? t('kakaoAuthNote', [nonFreeCount], ` Kakao must authorize ${nonFreeCount} non-free chapter(s); enabling this option does not unlock them.`) : '');
       start.disabled = false;
     } catch (error) {
       summary.textContent = error.message;
@@ -462,10 +486,11 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
   selection.addEventListener('input', refreshSummary);
   accountAccess.addEventListener('change', refreshSummary);
   for(const node of [stitchToggle,stitchMode,stitchHeight,stitchCount,stitchWidth,stitchMime,stitchQuality,format]) {
-    node.addEventListener('change',()=>{refreshStitch();refreshSummary();});
+    node.addEventListener('change',()=>{refreshStitch();refreshBundle();refreshSummary();});
     node.addEventListener('input',refreshSummary);
   }
   refreshStitch();
+  refreshBundle();
 
   start.addEventListener('click', async () => {
     start.disabled = true;
@@ -478,6 +503,7 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
           format: format.value,
           originalQuality: quality.checked,
           writeRawThenClean: cleanup.checked,
+          bundleSeries: bundle.checked && bundleApplies(),
           kakaoAccountAccess: adapterId === 'kakao' && accountAccess.checked,
           ...getStitchSettings(),
         },
@@ -493,9 +519,8 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
   if (lockedCount > 0) {
     body.append(
       el('div', { class: 'notice protected' }, [
-        el('strong', { text: `${downloadable.length} of ${series.chapters.length} chapters are free. ` }),
-        `The other ${lockedCount} are not marked free; this is not a check of your purchases. ` +
-          'Default mode permits free chapters only.',
+        el('strong', { text: t('lockedStrong', [downloadable.length, series.chapters.length], `${downloadable.length} of ${series.chapters.length} chapters are free. `) }),
+        t('lockedRest', [lockedCount], `The other ${lockedCount} are not marked free; this is not a check of your purchases. Default mode permits free chapters only.`),
       ]),
     );
   }
@@ -503,32 +528,34 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
   if (adapterId === 'kakao') {
     body.append(
       el('label', { class: 'checkbox' }, [accountAccess,
-        el('span', { text: 'Use my existing Kakao access (already purchased / active rental)' })]),
-      el('p', { class: 'hint', text: 'Sign in to Kakao and open the episode in this same browser/profile first. This option only requests viewer data; it does not buy chapters, call ticket/unlock APIs, or decrypt DRM. Start with one episode. Browser/API session compatibility is not yet verified on Quetta.' }),
+        el('span', { text: t('kakaoAccessLabel', undefined, 'Use my existing Kakao access (already purchased / active rental)') })]),
+      el('p', { class: 'hint', text: t('kakaoAccessHint', undefined, 'Sign in to Kakao and open the episode in this same browser/profile first. This option only requests viewer data; it does not buy chapters, call ticket/unlock APIs, or decrypt DRM. Start with one episode.') }),
     );
   }
 
   body.append(
-    el('label', { class: 'field' }, [el('span', { text: 'Chapters' }), selection]),
+    el('label', { class: 'field' }, [el('span', { text: t('labelChapters', undefined, 'Chapters') }), selection]),
     summary,
-    el('label', { class: 'field' }, [el('span', { text: 'Save as' }), format]),
-    el('label',{class:'checkbox'},[stitchToggle,el('span',{text:'ต่อภาพแนวตั้งแยกแต่ละตอน (Long images)'})]),
+    el('label', { class: 'field' }, [el('span', { text: t('labelSaveAs', undefined, 'Save as') }), format]),
+    el('label',{class:'checkbox'},[stitchToggle,el('span',{text:t('labelStitch',undefined,'ต่อภาพแนวตั้งแยกแต่ละตอน (Long images)')})]),
     stitchPanel,
-    el('label', { class: 'checkbox' }, [quality, el('span', { text: 'Original-quality images (larger files)' })]),
-    el('label', { class: 'checkbox' }, [cleanup, el('span', { text: 'Also write raw images, then delete them after converting' })]),
+    bundleLabel,
+    bundleHint,
+    el('label', { class: 'checkbox' }, [quality, el('span', { text: t('labelOriginalQuality', undefined, 'Original-quality images (larger files)') })]),
+    el('label', { class: 'checkbox' }, [cleanup, el('span', { text: t('labelCleanup', undefined, 'Also write raw images, then delete them after converting') })]),
     start,
   );
 
   refreshSummary();
 
-  const list = el('details', { class: 'settings' }, [el('summary', { text: `Chapter list (${series.chapters.length})` })]);
+  const list = el('details', { class: 'settings' }, [el('summary', { text: t('chapterListSummary', [series.chapters.length], `Chapter list (${series.chapters.length})`) })]);
   for (const chapter of [...series.chapters].reverse()) {
     list.append(
       el('div', { class: 'chapter' }, [
         el('span', { class: 'num', text: `#${chapter.number}` }),
         el('span', { text: chapter.title || '' }),
         chapter.isFree === false
-          ? el('span', { class: 'pill skipped-protected', text: 'not free · access unchecked' })
+          ? el('span', { class: 'pill skipped-protected', text: t('notFreePill', undefined, 'not free · access unchecked') })
           : el('span', { class: 'note', text: chapter.date || '' }),
       ]),
     );
@@ -595,9 +622,34 @@ chrome.runtime.onMessage.addListener((message) => {
   return false;
 });
 
+/**
+ * Interface-language picker. Lets the user force a language instead of
+ * following the browser; the choice is persisted and applied immediately,
+ * re-rendering the active dynamic view so its strings switch too.
+ */
+function initUiLanguageSelector() {
+  const select = $('ui-lang');
+  if (!select) return;
+  clear(select);
+  for (const { code, label } of UI_LANGUAGES) select.append(el('option', { value: code, text: label }));
+  select.value = state.settings.uiLanguage;
+  select.addEventListener('change', async () => {
+    try {
+      state.settings = await send(MSG.SET_SETTINGS, { uiLanguage: select.value });
+      await applyUiLanguage(state.settings.uiLanguage);
+      if (activeView === 'series' && state.current) renderSeries(state.current);
+      else if (activeView === 'following') renderFollowing();
+      else if (activeView === 'queue') renderQueue();
+    } catch (error) {
+      notice($('search-status'), error.message, 'error');
+    }
+  });
+}
+
 async function init() {
-  localizeDocument();
   state.settings = await send(MSG.GET_SETTINGS);
+  await applyUiLanguage(state.settings.uiLanguage);
+  initUiLanguageSelector();
   initFollowing();
 
   webtoonLanguage = state.settings.language;

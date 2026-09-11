@@ -9,6 +9,12 @@
 import {STITCH_DEFAULTS,stitchOptions} from './stitch-plan.js';
 
 export const OUTPUT_FORMATS = /** @type {const} */ (['pdf', 'cbz', 'zip', 'raw']);
+/** Shipped interface locales; 'auto' follows the browser UI language. */
+export const UI_LANGUAGES = /** @type {const} */ ([
+  { code: 'auto', label: 'Auto (browser)' },
+  { code: 'en', label: 'English' },
+  { code: 'th', label: 'ไทย (Thai)' },
+]);
 export const LANGUAGES = /** @type {const} */ ([
   { code: 'en', label: 'English' },
   { code: 'zh-hant', label: 'Chinese (Traditional)' },
@@ -41,10 +47,18 @@ export const DEFAULT_SETTINGS = Object.freeze({
   writeRawThenClean: false,
   /** Opt-in per job: request already accessible Kakao chapters using browser cookies. */
   kakaoAccountAccess: false,
+  /**
+   * For cbz/zip: pack every selected chapter into one archive per series
+   * (named by the chapter range) instead of one file per chapter. Ignored for
+   * pdf/raw and when stitching is on.
+   */
+  bundleSeries: false,
   /** Root folder inside the browser's Downloads directory. */
   downloadFolder: 'Webtoons',
-  /** Interface + search language. */
+  /** Search/content language (WEBTOON editions, Korean for NAVER/Kakao). */
   language: 'en',
+  /** Interface language: 'auto' follows the browser, or a shipped locale code. */
+  uiLanguage: 'auto',
   /** Zero-padding width for chapter numbers in filenames. */
   padWidth: 3,
 });
@@ -78,8 +92,10 @@ export function normalizeSettings(input) {
   s.padWidth = clamp(s.padWidth, 1, 6, DEFAULT_SETTINGS.padWidth);
   if (!OUTPUT_FORMATS.includes(s.format)) s.format = DEFAULT_SETTINGS.format;
   if (!LANGUAGES.some((l) => l.code === s.language)) s.language = DEFAULT_SETTINGS.language;
+  if (!UI_LANGUAGES.some((l) => l.code === s.uiLanguage)) s.uiLanguage = DEFAULT_SETTINGS.uiLanguage;
   s.originalQuality = Boolean(s.originalQuality);
   s.writeRawThenClean = Boolean(s.writeRawThenClean);
+  s.bundleSeries = s.bundleSeries === true;
   // Never opt in on truthy strings such as "false" or old stored values.
   s.kakaoAccountAccess = s.kakaoAccountAccess === true;
   s.stitchEnabled = s.stitchEnabled === true;
