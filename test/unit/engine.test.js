@@ -155,6 +155,29 @@ test('bundleSeries packs the whole selection into one range-named archive', asyn
   }
 });
 
+test('bundleSeries + stitching packs each chapter\'s stitched images into one archive', async () => {
+  const { io, saved } = recordingIo({
+    async *stitchPages() {
+      for (let index = 1; index <= 2; index++) yield { index, width: 700, height: 100, mimeType: 'image/jpeg', data: jpeg(700, 100) };
+    },
+  });
+  const blobs = [];
+  const save = io.saveBlob;
+  io.saveBlob = async (blob, name) => { blobs.push(blob); return save(blob, name); };
+  const job = await createEngine(io).runJob({ jobId: 'bundle-stitch', adapterId: 'stub', ref: {},
+    selection: 'all', settings: { ...baseSettings, format: 'cbz', bundleSeries: true, stitchEnabled: true } });
+
+  assert.equal(job.status, STATUS.DONE);
+  assert.equal(saved.length, 1, 'one archive for the whole stitched series');
+  assert.match(saved[0].filename, /Stub Series 1-3\.cbz$/);
+  assert.ok(job.chapters.every((c) => /Stitched into 2/.test(c.note)));
+  // 3 chapters × 2 stitched images each, namespaced per chapter folder.
+  const text = new TextDecoder().decode(new Uint8Array(await blobs[0].arrayBuffer()));
+  for (const name of ['001 - Episode 1/001.jpg', '001 - Episode 1/002.jpg', '003 - Episode 3/002.jpg']) {
+    assert.ok(text.includes(name), `archive should contain ${name}`);
+  }
+});
+
 test('bundleSeries is ignored for pdf, keeping one file per chapter', async () => {
   const { io, saved } = recordingIo();
   const job = await createEngine(io).runJob({ jobId: 'bundle-pdf', adapterId: 'stub', ref: {},
