@@ -68,6 +68,28 @@ export function buildViewerUrl(seriesId, productId) {
   );
 }
 
+// The list API returns `thumbnail` as a bare storage key ("kid") such as
+// "5bBdC/dJMcahC3iav/BAfwXGez7VfQ4KveEsiZD0" rather than a URL. The Kakao image
+// CDN serves that key as an image, and its host is already covered by the
+// Referer rule, so the panel can load it.
+const THUMBNAIL_BASE = 'https://page-images.kakaoentcdn.com/download/resource?kid=';
+
+/**
+ * Turn a Kakao thumbnail reference into a loadable URL.
+ *
+ * A bare storage key is expanded onto the image CDN; an already-absolute URL
+ * (or a protocol-relative one) is passed through unchanged so a future API
+ * that returns full URLs keeps working. Anything empty yields '' so the panel
+ * falls back to its placeholder tile instead of a broken image.
+ */
+export function buildThumbnailUrl(thumbnail) {
+  const key = String(thumbnail ?? '').trim();
+  if (!key) return '';
+  if (/^https?:\/\//i.test(key)) return key;
+  if (key.startsWith('//')) return `https:${key}`;
+  return `${THUMBNAIL_BASE}${encodeURIComponent(key)}`;
+}
+
 /**
  * Map one page of the list API onto chapters.
  *
@@ -169,17 +191,13 @@ export const kakaoAdapter = {
       throw new FetchError(`No chapters found for Kakao series ${ref.seriesId}`);
     }
 
-    // The list API returns a bare storage key rather than a URL for the
-    // thumbnail, and the prefix that turns it into one is not documented. An
-    // empty cover renders as a blank tile, which is better than a broken one.
-    const thumbnail = seriesItem?.thumbnail ?? '';
     return {
       title: seriesItem?.title ?? `Kakao ${ref.seriesId}`,
       author: [seriesItem?.operator_property?.author, seriesItem?.operator_property?.illustrator]
         .filter(Boolean)
         .join(', '),
       summary: seriesItem?.operator_property?.description ?? '',
-      cover: thumbnail.startsWith('http') ? thumbnail : '',
+      cover: buildThumbnailUrl(seriesItem?.thumbnail),
       chapters: chapters.sort((a, b) => a.number - b.number),
     };
   },
