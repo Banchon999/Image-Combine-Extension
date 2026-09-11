@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { kakaoAdapter } from '../../src/adapters/kakao.js';
+import { kakaoAdapter, buildThumbnailUrl } from '../../src/adapters/kakao.js';
 import { normalizeSettings } from '../../src/common/settings.js';
 import { initialSelection, validateChapterSelection } from '../../src/common/chapter-access.js';
 import { detectImageMime } from '../../src/common/image-types.js';
@@ -58,6 +58,30 @@ test('missing viewer data and unknown viewer types never manufacture image URLs'
 test('network failures retain their original diagnostics', async () => {
   const failure=new Error('network offline');
   await assert.rejects(kakaoAdapter.getChapterImages(ref,paid,{fetchJson:async()=>{throw failure;}},{kakaoAccountAccess:true}),error=>error===failure);
+});
+
+test('bare thumbnail storage keys expand onto the Kakao image CDN', () => {
+  assert.equal(
+    buildThumbnailUrl('5bBdC/dJMcahC3iav/BAfwXGez7VfQ4KveEsiZD0'),
+    'https://page-images.kakaoentcdn.com/download/resource?kid=5bBdC%2FdJMcahC3iav%2FBAfwXGez7VfQ4KveEsiZD0',
+  );
+});
+
+test('thumbnail already a URL is passed through and empties fall back to no cover', () => {
+  assert.equal(buildThumbnailUrl('https://cdn.example/cover.jpg'), 'https://cdn.example/cover.jpg');
+  assert.equal(buildThumbnailUrl('//cdn.example/cover.jpg'), 'https://cdn.example/cover.jpg');
+  for (const empty of ['', '   ', null, undefined]) assert.equal(buildThumbnailUrl(empty), '');
+});
+
+test('getSeries exposes a loadable cover instead of a blank tile', async () => {
+  const series = await kakaoAdapter.getSeries({ seriesId: '62711843', lang: 'ko' }, {
+    fetchJson: async () => ({ result: {
+      series_item: { title: 'Test', thumbnail: '5bBdC/dJMcahC3iav/BAfwXGez7VfQ4KveEsiZD0' },
+      list: [{ cursor_index: 1, item: { product_id: '101', title: '1화', is_free: true } }],
+      has_next: false,
+    } }),
+  });
+  assert.equal(series.cover, 'https://page-images.kakaoentcdn.com/download/resource?kid=5bBdC%2FdJMcahC3iav%2FBAfwXGez7VfQ4KveEsiZD0');
 });
 
 test('pasted Kakao viewer product ID selects its cursor number, not all free episodes', () => {
