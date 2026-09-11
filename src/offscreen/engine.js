@@ -257,12 +257,11 @@ export function createEngine(/** @type {EngineIO} */ io) {
       emit(job);
 
       // One archive for the whole selection, in chapter order, named by range.
-      // Only cbz/zip can bundle (pdf/raw keep one file per chapter); stitching is
-      // allowed and, when on, each chapter's stitched long images go in instead
-      // of its raw pages.
+      // Only cbz/zip can bundle; pdf/raw and stitching keep one file per chapter.
       const bundle =
         settings.bundleSeries === true &&
         (settings.format === 'cbz' || settings.format === 'zip') &&
+        !settings.stitchEnabled &&
         chosen.length > 0;
       const bundleParts = bundle ? new Array(chosen.length) : null;
       let bundleBytes = 0;
@@ -297,28 +296,10 @@ export function createEngine(/** @type {EngineIO} */ io) {
               // folder so page order survives across chapters, then save one
               // archive after every chapter is fetched.
               const folder = chapterFolderName(chapter.number, chapter.title, settings.padWidth);
-              let entries;
-              if (settings.stitchEnabled) {
-                // Same rule as per-chapter stitching: never stitch a chapter
-                // that lost a source image.
-                if (failures.length) throw new FetchError(`${failures.length} source image(s) failed. Refusing to stitch an incomplete chapter; retry or disable stitching.`);
-                if (!io.stitchPages) throw new Error('Image stitching is unavailable in this browser.');
-                const stitched = [];
-                for await (const page of io.stitchPages(pages, settings, signal, (note) => { entry.note = note; emit(job); })) {
-                  if (signal?.aborted) throw new CancelledError();
-                  stitched.push(page);
-                }
-                if (!stitched.length) throw new Error('Stitching returned no images.');
-                entries = stitched.map((page) => ({
-                  name: `${folder}/${padChapter(page.index, 3)}.${imageExtension('', page.mimeType)}`,
-                  data: page.data,
-                }));
-              } else {
-                entries = pages.map((page) => ({
-                  name: `${folder}/${padChapter(page.index, 3)}.${imageExtension(page.url, page.mimeType)}`,
-                  data: page.data,
-                }));
-              }
+              const entries = pages.map((page) => ({
+                name: `${folder}/${padChapter(page.index, 3)}.${imageExtension(page.url, page.mimeType)}`,
+                data: page.data,
+              }));
               bundleBytes += entries.reduce((sum, e) => sum + e.data.byteLength, 0);
               if (bundleBytes > MAX_BUNDLE_BYTES) {
                 bundleOverflow = true;
@@ -326,9 +307,7 @@ export function createEngine(/** @type {EngineIO} */ io) {
               }
               bundleParts[index] = { number: chapter.number, entries };
               entry.status = failures.length ? STATUS.PARTIAL : STATUS.DONE;
-              entry.note = settings.stitchEnabled
-                ? `Stitched into ${entries.length} image(s), added to the series archive`
-                : (failures.length ? `${failures.length} image(s) failed` : 'Added to the series archive');
+              entry.note = failures.length ? `${failures.length} image(s) failed` : 'Added to the series archive';
             } else {
               if (settings.stitchEnabled && failures.length) throw new FetchError(`${failures.length} source image(s) failed. Refusing to stitch an incomplete chapter; retry or disable stitching.`);
               const output=await writeChapter({ series, chapter, pages, settings, signal,
