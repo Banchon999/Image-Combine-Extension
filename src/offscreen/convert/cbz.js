@@ -76,9 +76,9 @@ function header(size) {
  *
  * @param {Array<{name: string, data: Uint8Array}>} entries
  * @param {{ date?: Date }} [options]
- * @returns {Blob} image/vnd.comicbook+zip
+ * @returns {Blob} a ZIP archive typed application/octet-stream (see below)
  */
-export function buildCbz(entries, { date = new Date(), format = 'cbz' } = {}) {
+export function buildCbz(entries, { date = new Date() } = {}) {
   if (!entries.length) throw new Error('Refusing to build an empty CBZ');
 
   const { time: dosTime, date: dosDate } = dosDateTime(date);
@@ -147,7 +147,14 @@ export function buildCbz(entries, { date = new Date(), format = 'cbz' } = {}) {
   eocd.u32(centralStart);
   eocd.u16(0); // comment length
 
+  // A CBZ is a ZIP, but the `application/vnd.comicbook+zip` media type is not in
+  // every Chromium fork's MIME table. When the blob's type has no extension the
+  // browser associates with the `.cbz` the filename already carries, some of
+  // them "correct" the download to `.zip` (or append it), so the saved file no
+  // longer opens as a comic archive. `application/octet-stream` has no preferred
+  // extension, which leaves the explicit `.cbz`/`.zip` filename authoritative
+  // everywhere. Comic readers key off the extension, not this type.
   return new Blob([...chunks, ...central, eocd.bytes], {
-    type: format === 'zip' ? 'application/zip' : 'application/vnd.comicbook+zip',
+    type: 'application/octet-stream',
   });
 }

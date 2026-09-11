@@ -137,6 +137,29 @@ function chapterBase(chapterNumber, chapterTitle, padWidth) {
   return chapterTitle ? `${padded} - ${sanitizeSegment(chapterTitle)}` : padded;
 }
 
+/**
+ * Safe, sanitised folder label for one chapter.
+ *
+ * Used as the per-chapter directory inside a whole-series bundle so page order
+ * is preserved across chapters. Exported (unlike chapterBase) because the
+ * bundle path is built in the engine, not here.
+ */
+export function chapterFolderName(chapterNumber, chapterTitle, padWidth = 3) {
+  return chapterBase(chapterNumber, chapterTitle, padWidth);
+}
+
+/**
+ * Relative path for a single whole-series archive, named by the chapter range.
+ *
+ * One file per series (e.g. "My Series 1-25.cbz") rather than the series
+ * subfolder the per-chapter paths use, because a bundle is a single file.
+ */
+export function seriesArchivePath({ seriesTitle, rangeLabel, format }) {
+  if (!['cbz', 'zip'].includes(format)) throw new Error(`Unsupported bundle format: ${format}`);
+  const stem = `${sanitizeSegment(seriesTitle)} ${sanitizeSegment(rangeLabel, 'chapters')}`.trim();
+  return buildPath([sanitizeFilename(`${stem}.${format}`)]);
+}
+
 /** Full relative path for one raw image inside a chapter folder. */
 export function imagePath({
   seriesTitle,

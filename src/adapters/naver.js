@@ -35,6 +35,22 @@ export function parseChapterPage(json, ref) {
       date: c.serviceDateDescription ?? '', url: chapterUrl(ref, Number(c.no)) }));
 }
 
+/** Read a series title from a NAVER list page's og:title, '' if unavailable. */
+export function parseListPageTitle(doc) {
+  const title = doc?.querySelector?.('meta[property="og:title"]')?.getAttribute('content');
+  return String(title ?? '').trim();
+}
+
+/** Fetch the list page and read its og:title; never throws (best-effort title). */
+async function readListPageTitle(ref, ctx) {
+  try {
+    const doc = await ctx.fetchDoc(`${ROOT}/webtoon/list?titleId=${encodeURIComponent(ref.seriesId)}`);
+    return parseListPageTitle(doc);
+  } catch {
+    return '';
+  }
+}
+
 export function parseViewerImages(doc) {
   const images = [];
   const seen = new Set();
@@ -94,7 +110,13 @@ export const naverAdapter = {
     const artists = info?.communityArtists ?? {};
     const names = [...(artists.writers ?? []), ...(artists.painters ?? []), ...(artists.originAuthors ?? [])]
       .map(a => a.name).filter(Boolean);
-    return { title: info?.titleName || `NAVER ${ref.seriesId}`, author: [...new Set(names)].join(', '),
+    // `titleName` comes from the info endpoint, which can 403 or need a login
+    // for some titles and was swallowed above. Without it the filename would be
+    // the numeric series id ("NAVER 831555"); the list page carries the real
+    // localized title in og:title, so read that before falling back to the id.
+    let title = info?.titleName;
+    if (!title) title = await readListPageTitle(ref, ctx);
+    return { title: title || `NAVER ${ref.seriesId}`, author: [...new Set(names)].join(', '),
       summary: info?.synopsis ?? '', cover: info?.thumbnailUrl ?? '',
       chapters: [...chapters.values()].sort((a,b) => a.number - b.number) };
   },

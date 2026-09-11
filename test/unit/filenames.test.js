@@ -9,12 +9,30 @@ import {
   archivePath,
   safeDownloadPath,
   sanitizeFilename,
+  chapterFolderName,
+  seriesArchivePath,
 } from '../../src/common/filenames.js';
 
 test('Korean filenames respect UTF-8 byte limits and retain extensions', () => {
   const path = archivePath({seriesTitle:'가'.repeat(100),chapterNumber:1,chapterTitle:'나'.repeat(100),format:'cbz'});
   for (const part of path.split('/')) assert.ok(new TextEncoder().encode(part).length <= 180);
   assert.ok(path.endsWith('.cbz'));
+});
+
+test('seriesArchivePath names one file per series by chapter range, no subfolder', () => {
+  assert.equal(seriesArchivePath({ seriesTitle: 'My Series', rangeLabel: '1-25', format: 'cbz' }), 'My Series 1-25.cbz');
+  assert.equal(seriesArchivePath({ seriesTitle: 'My Series', rangeLabel: '1,3,5-9', format: 'zip' }), 'My Series 1,3,5-9.zip');
+  // Illegal characters in the title are sanitised, and the result stays a single segment.
+  const path = seriesArchivePath({ seriesTitle: 'a/b:c', rangeLabel: '1-2', format: 'cbz' });
+  assert.ok(!path.includes('/'));
+  assert.ok(path.endsWith('.cbz'));
+  assert.throws(() => seriesArchivePath({ seriesTitle: 'x', rangeLabel: '1', format: 'pdf' }), /Unsupported bundle format/);
+});
+
+test('chapterFolderName pairs a padded number with a sanitised title', () => {
+  assert.equal(chapterFolderName(3, 'Episode 3', 3), '003 - Episode 3');
+  assert.equal(chapterFolderName(3, '', 3), '003');
+  assert.ok(!chapterFolderName(3, 'a/b', 3).includes('/'));
 });
 
 test('Unicode truncation never leaves an unpaired surrogate', () => {

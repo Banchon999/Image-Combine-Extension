@@ -131,7 +131,60 @@ test('runs a job end to end and writes one archive per chapter', async () => {
     'Webtoons/Stub Series/002 - Episode 2.cbz',
     'Webtoons/Stub Series/003 - Episode 3.cbz',
   ]);
-  assert.ok(saved.every((s) => s.type === 'application/vnd.comicbook+zip'));
+  // Neutral octet-stream keeps the explicit .cbz filename authoritative across
+  // browsers that would otherwise rewrite an unrecognised comic-archive type.
+  assert.ok(saved.every((s) => s.type === 'application/octet-stream'));
+});
+
+test('bundleSeries packs the whole selection into one range-named archive', async () => {
+  const { io, saved } = recordingIo();
+  const blobs = [];
+  const save = io.saveBlob;
+  io.saveBlob = async (blob, name) => { blobs.push(blob); return save(blob, name); };
+  const job = await createEngine(io).runJob({ jobId: 'bundle', adapterId: 'stub', ref: {},
+    selection: 'all', settings: { ...baseSettings, format: 'cbz', bundleSeries: true } });
+
+  assert.equal(job.status, STATUS.DONE);
+  assert.equal(saved.length, 1, 'one archive for the whole series, not one per chapter');
+  assert.equal(saved[0].filename, 'Webtoons/Stub Series 1-3.cbz');
+  assert.equal(saved[0].type, 'application/octet-stream');
+  // Each chapter's pages live under their own in-archive folder so order holds.
+  const text = new TextDecoder().decode(new Uint8Array(await blobs[0].arrayBuffer()));
+  for (const name of ['001 - Episode 1/001.jpg', '002 - Episode 2/003.jpg', '003 - Episode 3/002.jpg']) {
+    assert.ok(text.includes(name), `archive should contain ${name}`);
+  }
+});
+
+test('bundleSeries + stitching packs each chapter\'s stitched images into one archive', async () => {
+  const { io, saved } = recordingIo({
+    async *stitchPages() {
+      for (let index = 1; index <= 2; index++) yield { index, width: 700, height: 100, mimeType: 'image/jpeg', data: jpeg(700, 100) };
+    },
+  });
+  const blobs = [];
+  const save = io.saveBlob;
+  io.saveBlob = async (blob, name) => { blobs.push(blob); return save(blob, name); };
+  const job = await createEngine(io).runJob({ jobId: 'bundle-stitch', adapterId: 'stub', ref: {},
+    selection: 'all', settings: { ...baseSettings, format: 'cbz', bundleSeries: true, stitchEnabled: true } });
+
+  assert.equal(job.status, STATUS.DONE);
+  assert.equal(saved.length, 1, 'one archive for the whole stitched series');
+  assert.match(saved[0].filename, /Stub Series 1-3\.cbz$/);
+  assert.ok(job.chapters.every((c) => /Stitched into 2/.test(c.note)));
+  // 3 chapters × 2 stitched images each, namespaced per chapter folder.
+  const text = new TextDecoder().decode(new Uint8Array(await blobs[0].arrayBuffer()));
+  for (const name of ['001 - Episode 1/001.jpg', '001 - Episode 1/002.jpg', '003 - Episode 3/002.jpg']) {
+    assert.ok(text.includes(name), `archive should contain ${name}`);
+  }
+});
+
+test('bundleSeries is ignored for pdf, keeping one file per chapter', async () => {
+  const { io, saved } = recordingIo();
+  const job = await createEngine(io).runJob({ jobId: 'bundle-pdf', adapterId: 'stub', ref: {},
+    selection: 'all', settings: { ...baseSettings, format: 'pdf', bundleSeries: true } });
+  assert.equal(job.status, STATUS.DONE);
+  assert.equal(saved.length, 3);
+  assert.ok(saved.every((s) => s.filename.endsWith('.pdf')));
 });
 
 test('honours the chapter selection', async () => {
@@ -498,7 +551,7 @@ test('an invalid chapter selection fails before fetching', async () => {
   assert.equal(fetched, 0);
 });
 
-test('ZIP output uses ZIP bytes, a .zip suffix, and application/zip MIME', async () => {
+test('ZIP output uses ZIP bytes, a .zip suffix, and a neutral MIME', async () => {
   const blobs = [];
   const { io, saved } = recordingIo();
   const save = io.saveBlob;
@@ -507,7 +560,7 @@ test('ZIP output uses ZIP bytes, a .zip suffix, and application/zip MIME', async
     selection: '1', settings: { ...baseSettings, format: 'zip' } });
   assert.equal(job.status, STATUS.DONE);
   assert.equal(saved.length, 1);
-  assert.equal(saved[0].type, 'application/zip');
+  assert.equal(saved[0].type, 'application/octet-stream');
   assert.match(saved[0].filename, /\.zip$/);
   const bytes = new Uint8Array(await blobs[0].arrayBuffer());
   assert.deepEqual([...bytes.slice(0,4)], [0x50,0x4b,3,4]);

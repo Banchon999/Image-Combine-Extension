@@ -7,64 +7,103 @@
     "message": "Download webtoon chapters as PDF, CBZ or raw images, with search, chapter ranges and parallel fetching.",
     "description": "Extension description shown on the extensions page."
   },
-  "appTitle": {
-    "message": "Webtoon Downloader"
-  },
-  "tabSearch": {
-    "message": "Search"
-  },
-  "tabFollowing": {
-    "message": "Following"
-  },
-  "tabSeries": {
-    "message": "Series"
-  },
-  "tabQueue": {
-    "message": "Queue"
-  },
-  "openByUrl": {
-    "message": "Open by URL"
-  },
-  "openButton": {
-    "message": "Open"
-  },
-  "pasteUrlHint": {
-    "message": "Paste a series or episode link from a supported site."
-  },
-  "searchSite": {
-    "message": "Search site"
-  },
-  "searchBy": {
-    "message": "Search by title / author"
-  },
-  "searchButton": {
-    "message": "Search"
-  },
-  "seeAllResults": {
-    "message": "See all results on the site"
-  },
-  "followingTitle": {
-    "message": "Following"
-  },
-  "followingHint": {
-    "message": "Remember existing chapters and check for additions. Nothing is downloaded or purchased automatically."
-  },
-  "checkAll": {
-    "message": "Check all"
-  },
-  "exportBackup": {
-    "message": "Export JSON"
-  },
-  "importBackup": {
-    "message": "Import"
-  },
-  "backupHint": {
-    "message": "Stored in this browser. Export a backup before removing or reinstalling the extension."
-  },
-  "seriesEmpty": {
-    "message": "Pick a series from Search, or paste a link."
-  },
-  "queueEmpty": {
-    "message": "No downloads yet."
-  }
+  "appTitle": { "message": "Webtoon Downloader" },
+  "tabSearch": { "message": "Search" },
+  "tabFollowing": { "message": "Following" },
+  "tabSeries": { "message": "Series" },
+  "tabQueue": { "message": "Queue" },
+  "openByUrl": { "message": "Open by URL" },
+  "openButton": { "message": "Open" },
+  "pasteUrlHint": { "message": "Paste a series or episode link from a supported site." },
+  "searchSite": { "message": "Search site" },
+  "searchBy": { "message": "Search by title / author" },
+  "searchButton": { "message": "Search" },
+  "seeAllResults": { "message": "See all results on the site" },
+  "followingTitle": { "message": "Following" },
+  "followingHint": { "message": "Remember existing chapters and check for additions. Nothing is downloaded or purchased automatically." },
+  "checkAll": { "message": "Check all" },
+  "exportBackup": { "message": "Export JSON" },
+  "importBackup": { "message": "Import" },
+  "backupHint": { "message": "Stored in this browser. Export a backup before removing or reinstalling the extension." },
+  "seriesEmpty": { "message": "Pick a series from Search, or paste a link." },
+  "queueEmpty": { "message": "No downloads yet." },
+
+  "uiLanguageLabel": { "message": "Interface language" },
+
+  "searchHintKorean": { "message": "Search Korean titles/authors. Opens a temporary tab and closes it after reading the first results. Kakao searches webtoons only; account access is opt-in on the chapter page." },
+  "searchHintWebtoon": { "message": "Search the selected WEBTOON language." },
+  "searchTypePrompt": { "message": "Type a title to search for." },
+  "searching": { "message": "Searching…" },
+  "searchNoResults": { "message": "Nothing found for “$1” on the selected site/language.", "placeholders": { "query": { "content": "$1" } } },
+  "searchResults": { "message": "$1 results", "placeholders": { "count": { "content": "$1" } } },
+  "searchResultsBatch": { "message": "$1 results (first loaded batch; see the site for more).", "placeholders": { "count": { "content": "$1" } } },
+  "loadingChapters": { "message": "Loading chapters…" },
+
+  "followEmpty": { "message": "Open a series from Search or a URL, then tap “Follow this series” to start tracking." },
+  "followThis": { "message": "Follow this series" },
+  "followedGoTab": { "message": "Following — see the Following tab" },
+  "followAddFailed": { "message": "Couldn't save: $1 (tap to retry)", "placeholders": { "error": { "content": "$1" } } },
+  "followFirstHint": { "message": "The first check records every chapter that exists now as the baseline; it does not mean those chapters were downloaded." },
+  "followSelectedNewHint": { "message": "Only the new chapters are selected. After confirming the download succeeded, return to the Following tab and tap “Mark shown chapters handled”. A failed download will not clear the new-chapter list." },
+  "followProgress": { "message": "saved up to #$1 → latest #$2", "placeholders": { "old": { "content": "$1" }, "current": { "content": "$2" } } },
+  "followPending": { "message": "$1 new chapter(s) not yet handled: $2", "placeholders": { "count": { "content": "$1" }, "range": { "content": "$2" } } },
+  "followNoPending": { "message": "No new chapters pending" },
+  "followLastChecked": { "message": "Last successful check: $1", "placeholders": { "when": { "content": "$1" } } },
+  "followNever": { "message": "never checked" },
+  "followCheckFailed": { "message": "Check failed: $1 (kept the previous list)", "placeholders": { "error": { "content": "$1" } } },
+  "followStaleHint": { "message": "Some previously seen chapters are missing from the latest list, so their status is kept pending; they are not treated as downloaded." },
+  "followCheckNew": { "message": "Check for new" },
+  "followPickNew": { "message": "Pick new to download" },
+  "followOpen": { "message": "Open series" },
+  "followMarkHandled": { "message": "Mark shown chapters handled" },
+  "followUnfollow": { "message": "Unfollow" },
+  "followCheckResult": { "message": "$1: $2 new chapter(s) pending", "placeholders": { "title": { "content": "$1" }, "count": { "content": "$2" } } },
+  "followNoOpenable": { "message": "No openable new chapters in the latest list." },
+  "followMarkConfirm": { "message": "Remove $1 shown chapter(s) from the new-chapter list of “$2”?\nDo this after a successful download, or when you don't want to download them. This is not a check that the files finished downloading.", "placeholders": { "count": { "content": "$1" }, "title": { "content": "$2" } } },
+  "followMarkedDone": { "message": "Marked the shown chapters handled. Chapters that arrive later will still be pending." },
+  "followUnfollowConfirm": { "message": "Unfollow “$1”? The tracking history for this series will be deleted, but downloaded files are not removed.", "placeholders": { "title": { "content": "$1" } } },
+  "followExportDone": { "message": "Backup handed to the browser. Keep this file before changing or removing the extension." },
+  "followCheckingProgress": { "message": "Checking $1/$2: $3", "placeholders": { "index": { "content": "$1" }, "total": { "content": "$2" }, "title": { "content": "$3" } } },
+  "followCheckedAll": { "message": "Checked $1 series", "placeholders": { "total": { "content": "$1" } } },
+  "followCheckedFailed": { "message": " · $1 failed, see the note under each series", "placeholders": { "count": { "content": "$1" } } },
+  "backupTooLarge": { "message": "Backup file is larger than 5 MB" },
+  "importResult": { "message": "Imported $1 series · skipped $2 already present, without overwriting their status", "placeholders": { "added": { "content": "$1" }, "skipped": { "content": "$2" } } },
+
+  "chaptersAvailable": { "message": "$1 chapters available", "placeholders": { "count": { "content": "$1" } } },
+  "fmtPdf": { "message": "PDF" },
+  "fmtCbz": { "message": "CBZ (comic archive)" },
+  "fmtZip": { "message": "ZIP (images archive)" },
+  "fmtRaw": { "message": "Raw images" },
+  "noFreeChapters": { "message": "No free chapters. If you already have access, enable the Kakao account option and enter specific chapter numbers." },
+  "willRequest": { "message": "Will request $1.", "placeholders": { "what": { "content": "$1" } } },
+  "kakaoAuthNote": { "message": " Kakao must authorize $1 non-free chapter(s); enabling this option does not unlock them.", "placeholders": { "count": { "content": "$1" } } },
+  "lockedStrong": { "message": "$1 of $2 chapters are free. ", "placeholders": { "free": { "content": "$1" }, "total": { "content": "$2" } } },
+  "lockedRest": { "message": "The other $1 are not marked free; this is not a check of your purchases. Default mode permits free chapters only.", "placeholders": { "count": { "content": "$1" } } },
+  "kakaoAccessLabel": { "message": "Use my existing Kakao access (already purchased / active rental)" },
+  "kakaoAccessHint": { "message": "Sign in to Kakao and open the episode in this same browser/profile first. This option only requests viewer data; it does not buy chapters, call ticket/unlock APIs, or decrypt DRM. Start with one episode." },
+  "labelChapters": { "message": "Chapters" },
+  "labelSaveAs": { "message": "Save as" },
+  "labelOriginalQuality": { "message": "Original-quality images (larger files)" },
+  "labelCleanup": { "message": "Also write raw images, then delete them after converting" },
+  "labelStitch": { "message": "Stitch pages vertically, per chapter (long strips)" },
+  "downloadButton": { "message": "Download" },
+  "notFreePill": { "message": "not free · access unchecked" },
+  "chapterListSummary": { "message": "Chapter list ($1)", "placeholders": { "count": { "content": "$1" } } },
+
+  "bundleSeries": { "message": "Pack every selected chapter into one file per series (named by chapter range)" },
+  "bundleHintOn": { "message": "e.g. “Title 1-25.cbz” — the whole series in one file, each chapter in its own inner folder (works with vertical stitching). Very large series may fail to build." },
+  "bundleHintOff": { "message": "Available only for CBZ/ZIP." },
+
+  "stitchModeSmart": { "message": "Smart — choose the height for you" },
+  "stitchModeHeight": { "message": "Set a maximum height per image" },
+  "stitchModeCount": { "message": "Set a number of images + maximum height" },
+  "stitchFieldMode": { "message": "How to split images" },
+  "stitchFieldHeight": { "message": "Maximum height per image (px) — the last image may be shorter" },
+  "stitchFieldCount": { "message": "Images per chapter — split to roughly equal heights" },
+  "stitchFieldWidth": { "message": "Width (px) — 0 = use the narrowest source image width" },
+  "stitchFieldMime": { "message": "Image type after stitching" },
+  "stitchFieldQuality": { "message": "JPG/WebP quality (1–100)" },
+  "stitchHintDesktop": { "message": "Desktop ceiling: width/height ≤ $1 px and total area ≤ 268,435,456 pixels (the canvas alone can use up to 1 GiB of RAM). The same limits apply on every device; free RAM is not checked and success is not guaranteed. WebP is capped at 16,383 px per side — pick JPG/PNG for 18,000. Smart splits by this ceiling, not by speech bubbles. Images are resized to one width and transparency is flattened to white. If there are too few images the minimum is reported; trailing images are never dropped. ", "placeholders": { "max": { "content": "$1" } } },
+  "stitchHintPdf": { "message": "PDF uses JPG images internally, at the quality set above." },
+  "stitchHintArchive": { "message": "Choose Save as = Raw images to keep separate files, or ZIP/CBZ to combine into one file." }
 }

@@ -30,4 +30,12 @@ test('rejects unknown formats and languages', () => {
 test('coerces flags to booleans', () => {
   assert.equal(normalizeSettings({ originalQuality: 'yes' }).originalQuality, true);
   assert.equal(normalizeSettings({ writeRawThenClean: 0 }).writeRawThenClean, false);
+  assert.equal(normalizeSettings({ bundleSeries: 'true' }).bundleSeries, false, 'bundle only opts in on literal true');
+  assert.equal(normalizeSettings({ bundleSeries: true }).bundleSeries, true);
+});
+
+test('rejects unknown interface languages, keeps auto and shipped locales', () => {
+  assert.equal(normalizeSettings({ uiLanguage: 'zz' }).uiLanguage, DEFAULT_SETTINGS.uiLanguage);
+  assert.equal(normalizeSettings({ uiLanguage: 'auto' }).uiLanguage, 'auto');
+  assert.equal(normalizeSettings({ uiLanguage: 'th' }).uiLanguage, 'th');
 });
