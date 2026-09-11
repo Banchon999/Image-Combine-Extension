@@ -409,16 +409,15 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
   const bundleLabel = el('label', { class: 'checkbox' }, [bundle,
     el('span', { text: t('bundleSeries', undefined, 'รวมทุกตอนที่เลือกเป็นไฟล์เดียวต่อเรื่อง (ตั้งชื่อตามช่วงตอน)') })]);
   const bundleHint = el('p', { class: 'hint' });
-  // Bundling concatenates every chapter in memory, so it applies to the archive
-  // formats only. It works with stitching: each chapter's stitched long images
-  // go into the one archive.
-  const bundleApplies = () => format.value === 'cbz' || format.value === 'zip';
+  // Bundling concatenates every chapter in memory, so it only applies to the
+  // archive formats and never to stitching (which is itself whole-chapter work).
+  const bundleApplies = () => (format.value === 'cbz' || format.value === 'zip') && !stitchToggle.checked;
   const refreshBundle = () => {
     const ok = bundleApplies();
     bundle.disabled = !ok;
     bundleHint.textContent = ok
-      ? t('bundleHintOn', undefined, 'เช่น “ชื่อเรื่อง 1-25.cbz” ทั้งเรื่องในไฟล์เดียว แต่ละตอนอยู่ในโฟลเดอร์ย่อยภายใน (ใช้ร่วมกับการต่อภาพได้) ไฟล์ใหญ่มากอาจสร้างไม่ได้')
-      : t('bundleHintOff', undefined, 'ใช้ได้เฉพาะ CBZ/ZIP');
+      ? t('bundleHintOn', undefined, 'เช่น “ชื่อเรื่อง 1-25.cbz” ทั้งเรื่องในไฟล์เดียว แต่ละตอนอยู่ในโฟลเดอร์ย่อยภายใน ไฟล์ใหญ่มากอาจสร้างไม่ได้')
+      : t('bundleHintOff', undefined, 'ใช้ได้เฉพาะ CBZ/ZIP และต้องปิดการต่อภาพแนวตั้ง');
   };
 
   const stitchSettings={...STITCH_DEFAULTS,...state.settings};
