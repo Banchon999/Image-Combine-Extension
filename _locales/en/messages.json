@@ -91,8 +91,8 @@
   "chapterListSummary": { "message": "Chapter list ($1)", "placeholders": { "count": { "content": "$1" } } },
 
   "bundleSeries": { "message": "Pack every selected chapter into one file per series (named by chapter range)" },
-  "bundleHintOn": { "message": "e.g. “Title 1-25.cbz” — the whole series in one file, each chapter in its own inner folder (works with vertical stitching). Very large series may fail to build." },
-  "bundleHintOff": { "message": "Available only for CBZ/ZIP." },
+  "bundleHintOn": { "message": "e.g. “Title 1-25.cbz” — the whole series in one file, each chapter in its own inner folder. Very large series may fail to build." },
+  "bundleHintOff": { "message": "Available only for CBZ/ZIP, and with vertical stitching turned off." },
 
   "stitchModeSmart": { "message": "Smart — choose the height for you" },
   "stitchModeHeight": { "message": "Set a maximum height per image" },
