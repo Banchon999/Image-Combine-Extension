@@ -115,10 +115,13 @@ const handlers = {
     const jobId = `job-${Date.now()}-${++jobCounter}`;
     const merged = { ...(await getSettings()), ...(settings ?? {}) };
 
-    // Fire and forget: the job outlives this worker, and the panel follows it
-    // through JOB_UPDATED broadcasts rather than this response.
+    // Fire and forget: the offscreen handler acks the start immediately and
+    // runs the job detached, so this send resolves in milliseconds even for a
+    // multi-chapter download. The panel follows progress through JOB_UPDATED
+    // broadcasts rather than this response. Any rejection here means offscreen
+    // itself was unreachable (worth logging), not that the job failed.
     toOffscreen('offscreen:run-job', { jobId, adapterId, ref, selection, settings: merged }).catch(
-      (error) => log.error(`Job ${jobId} failed`, String(error?.message ?? error)),
+      (error) => log.error(`Could not start job ${jobId}`, String(error?.message ?? error)),
     );
     return { jobId };
   },
