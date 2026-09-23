@@ -165,7 +165,24 @@ const engine = createEngine(io);
 const handlers = {
   [MSG.OFF_SEARCH]: (payload) => engine.search(payload),
   [MSG.OFF_GET_SERIES]: (payload) => engine.getSeries(payload),
-  'offscreen:run-job': (payload) => engine.runJob(payload),
+  /**
+   * A job runs for seconds to minutes; the sender's service worker is torn
+   * down after ~30s idle in MV3, and holding the sendMessage channel across
+   * that termination rejects the send with the misleading "A listener
+   * indicated an asynchronous response by returning true, but the message
+   * channel closed before a response was received" — followed by a spurious
+   * "Job … failed" in the extension error page, even though the job actually
+   * ran to completion here in the offscreen document.
+   *
+   * Ack the start immediately so the channel closes in milliseconds, then let
+   * the job run detached. Progress and terminal state (including failure) are
+   * already broadcast per-chapter via JOB_UPDATED, so the sender loses no
+   * information by not awaiting the return value.
+   */
+  'offscreen:run-job': (payload) => {
+    engine.runJob(payload).catch(() => {}); // Errors surface via broadcast(JOB_UPDATED, {status:'failed', error}).
+    return { started: true, jobId: payload?.jobId };
+  },
   [MSG.OFF_CANCEL]: ({ jobId }) => engine.cancel(jobId),
 
   /**
