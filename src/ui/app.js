@@ -582,31 +582,72 @@ function renderQueue() {
     if (job.status === STATUS.RUNNING) {
       head.append(
         el('button', {
-          text: 'Cancel',
+          text: t('cancelJob', undefined, 'Cancel'),
           onclick: () => send(MSG.CANCEL_JOB, { jobId: job.id }).catch(() => {}),
         }),
       );
     }
     card.append(head);
-
+    if (job.site) card.append(el('div', { class: 'job-site', text: job.site }));
     if (job.error) card.append(el('div', { class: 'notice error', text: job.error }));
 
-    for (const chapter of job.chapters ?? []) {
-      const pct = chapter.total ? Math.round((chapter.done / chapter.total) * 100) : 0;
-      const bar = el('div', { class: 'bar', role: 'progressbar', 'aria-label': `Chapter ${chapter.number}`,
-        'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(chapter.status === STATUS.DONE ? 100 : pct) }, [el('i')]);
-      bar.firstChild.style.width = `${chapter.status === STATUS.DONE ? 100 : pct}%`;
+    const chapters = job.chapters ?? [];
+    // Delivered means a file was written: a partial chapter lost some images
+    // but still produced an archive, so it counts.
+    const delivered = chapters.filter(
+      c => c.status === STATUS.DONE || c.status === STATUS.PARTIAL,
+    ).length;
 
-      card.append(
-        el('div', { class: 'chapter' }, [
-          el('span', { class: 'num', text: `#${chapter.number}` }),
-          chapter.note
-            ? el('span', { class: 'note', text: chapter.note })
-            : bar,
-          el('span', { class: `pill ${chapter.status}`, text: chapter.status.replace('skipped-protected', 'protected') }),
+    const rack = el('div', { class: 'strip-rack' });
+    for (const chapter of chapters) {
+      const pct = chapter.status === STATUS.DONE
+        ? 100
+        : chapter.total ? Math.round((chapter.done / chapter.total) * 100) : 0;
+      // Rule the trough only once the page count is known. A queued chapter
+      // hasn't been fetched yet, so drawing rules there would show a page count
+      // we invented — and made unstarted chapters look busier than running ones.
+      const ruled = chapter.total > 0;
+      // One hairline per page while that stays legible in a 74px trough;
+      // past that the rules become a uniform grain that still reads as "many".
+      const tick = ruled && chapter.total <= 20 ? 100 / chapter.total : 5;
+      const trough = {
+        class: ruled ? 'strip-trough ruled' : 'strip-trough',
+        role: 'progressbar',
+        'aria-label': `Chapter ${chapter.number}`,
+        'aria-valuemin': '0',
+        'aria-valuemax': '100',
+        'aria-valuenow': String(pct),
+      };
+      if (ruled) trough.style = `--tick:${tick}%`;
+
+      rack.append(
+        el('div', { class: `strip ${chapter.status}` }, [
+          el('div', trough, [el('div', { class: 'strip-fill', style: `height:${pct}%` })]),
+          el('div', { class: 'strip-no', text: String(chapter.number) }),
         ]),
       );
     }
+
+    card.append(
+      el('div', { class: 'job-body' }, [
+        el('div', { class: 'job-count' }, [
+          el('b', {}, [String(delivered), el('i', { text: `/${chapters.length}` })]),
+          el('span', { text: t('jobCountLabel', undefined, 'chapters') }),
+        ]),
+        el('div', { style: 'min-width:0;flex:1' }, [
+          rack,
+          el('span', { class: 'strip-cap', text: t('stripCaption', undefined, 'pages, top to bottom') }),
+        ]),
+      ]),
+    );
+
+    // Anything a chapter has to say rather than show: a failure reason, a
+    // count of lost images, the stitched-image tally.
+    for (const chapter of chapters) {
+      if (!chapter.note) continue;
+      card.append(el('div', { class: 'job-note', text: `${chapter.number} · ${chapter.note}` }));
+    }
+
     body.append(card);
   }
 }

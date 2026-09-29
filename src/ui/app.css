@@ -1,61 +1,95 @@
 /*
  * App page styling.
  *
- * Dark-first, because the page is usually opened next to a comic and a bright
- * surface next to artwork is unpleasant to read against. The light palette is a
- * full override rather than an afterthought, so the page follows the browser
- * theme either way.
+ * The visual system is built around what a webtoon actually is: not a grid of
+ * pages but one continuous vertical strip. That is also a literal description
+ * of this tool's work -- stack N images top to bottom and box them up -- so the
+ * strip is the organising form rather than a decorative motif. It shows up in
+ * one place only, the queue gauge, which gets the whole boldness budget; every
+ * other surface is kept deliberately quiet so that one idea reads.
  *
- * The same stylesheet covers a narrow window and a maximised one: content is
- * centred to a readable column instead of stretching, and gains a second column
- * for the queue once there is room.
+ * Palette is drawn from obangsaek, the Korean five cardinal colours, because
+ * all three supported sources (WEBTOON, NAVER, Kakao) are Korean platforms.
+ * Two of those colours carry meaning and are never used decoratively:
+ *   jade (cheong) -- only things in motion or actionable
+ *   seal (jeok)   -- only "locked / not free", after the cinnabar stamp an
+ *                    artist presses onto their own work
+ *
+ * Dark-first, because the page is usually opened next to artwork and a bright
+ * surface next to a comic is unpleasant to read against. The light palette is a
+ * genuine inversion of the same system, not an afterthought.
+ *
+ * No webfont on purpose. Series titles arrive in Korean, the interface ships in
+ * Thai and English, and a remote font is both an offline failure and a privacy
+ * leak in an extension. The personality comes from the setting instead, and the
+ * thesis is that the numerals are the display face: this tool is chapter 146,
+ * range 1-25, 3 of 5 -- so the numbers are set large and tabular and everything
+ * around them is small and quiet.
  */
 
 :root {
   color-scheme: dark light;
 
-  --bg: #0f1115;
-  --bg-raised: #171a21;
-  --bg-input: #1d212a;
-  --border: #272c37;
-  --border-strong: #363d4c;
+  /* ground */
+  --ink: #0e1016;
+  --ink-raised: #161a23;
+  --ink-sunk: #0a0c11;
+  --line: #242a36;
+  --line-strong: #333b4a;
 
-  --text: #e7e9ee;
-  --text-dim: #9aa3b2;
-  --text-faint: #6b7382;
+  /* text */
+  --text: #e6e8ee;
+  --mist: #8b93a4;
+  --mist-faint: #626a7a;
 
-  --accent: #4f8cff;
-  --accent-hover: #6d9fff;
-  --accent-soft: rgba(79, 140, 255, 0.14);
+  /* obangsaek */
+  --jade: #35b3a0;
+  --jade-lift: #4ccdb9;
+  --jade-wash: rgba(53, 179, 160, 0.14);
+  --seal: #c4443c;
+  --seal-wash: rgba(196, 68, 60, 0.15);
+  --gold: #d8a227;
+  --gold-wash: rgba(216, 162, 39, 0.15);
+  --paper: #e8e2d5;
+  --violet: #9b7cf0;
+  --violet-wash: rgba(155, 124, 240, 0.15);
 
-  --ok: #3fb950;
-  --warn: #d29922;
-  --danger: #f26d6d;
-  --protected: #a371f7;
-
-  --radius: 10px;
-  --radius-sm: 7px;
+  --radius: 9px;
+  --radius-sm: 6px;
   --gap: 12px;
 
-  /* Content column width. A full browser tab is far wider than comfortable
-     reading measure, so the page is centred rather than stretched. */
+  /* A browser tab is far wider than a comfortable measure, so the page is
+     centred rather than stretched. */
   --page-max: 1180px;
   --page-pad: 20px;
 
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  /* Covers Latin, Hangul (series titles) and Thai (interface) without a
+     network request. */
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Noto Sans Thai", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic",
+    "Helvetica Neue", sans-serif;
 }
 
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #ffffff;
-    --bg-raised: #f6f7f9;
-    --bg-input: #ffffff;
-    --border: #e2e5ea;
-    --border-strong: #c9cdd6;
-    --text: #14161a;
-    --text-dim: #5a6372;
-    --text-faint: #868e9c;
-    --accent-soft: rgba(79, 140, 255, 0.12);
+    --ink: #faf9f6;
+    --ink-raised: #ffffff;
+    --ink-sunk: #eeece6;
+    --line: #e0ddd5;
+    --line-strong: #c6c2b8;
+    --text: #16181d;
+    --mist: #5d6472;
+    --mist-faint: #878d99;
+    --jade: #1f8878;
+    --jade-lift: #17705f;
+    --jade-wash: rgba(31, 136, 120, 0.12);
+    --seal: #b03a33;
+    --seal-wash: rgba(176, 58, 51, 0.1);
+    --gold: #98700f;
+    --gold-wash: rgba(152, 112, 15, 0.12);
+    --paper: #3b3730;
+    --violet: #6f4fd0;
+    --violet-wash: rgba(111, 79, 208, 0.1);
   }
 }
 
@@ -66,10 +100,23 @@ body {
   font-family: var(--font);
   font-size: 13px;
   line-height: 1.5;
-  background: var(--bg);
+  background: var(--ink);
   color: var(--text);
   min-width: 320px;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The one typographic register that repeats: eyebrows, field labels, status.
+   Small, wide-tracked, uppercase -- it frames the numerals without competing. */
+.col-title,
+label.field > span,
+.pill,
+.strip-cap {
+  font-size: 10.5px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
 }
 
 /* ------------------------------- chrome ---------------------------------- */
@@ -78,14 +125,13 @@ header {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
 }
 
-/* Centred to the same width as the content below, so the header does not run
-   edge to edge on a wide monitor while the content sits in a column.
-   Named .topbar, not .bar: .bar is the queue progress bar, whose
-   `height: 4px; overflow: hidden` would crush this and clip its contents. */
+/* Centred to the same width as the content below. Named .topbar, not .bar,
+   so it cannot collide with progress styling. */
 .topbar {
   max-width: var(--page-max);
   margin: 0 auto;
@@ -95,110 +141,95 @@ header {
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 0 10px;
+  gap: 9px;
+  padding: 13px 0 11px;
   font-weight: 650;
-  font-size: 14px;
-  letter-spacing: -0.01em;
+  font-size: 13.5px;
+  letter-spacing: -0.005em;
 }
 
+/* The mark is a miniature of the signature: three stacked strip segments,
+   the topmost filled, reading as a strip mid-assembly. */
 .brand .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
+  width: 7px;
+  height: 16px;
+  border-radius: 2px;
   flex: none;
+  background:
+    linear-gradient(var(--jade) 0 0) top / 100% 6px no-repeat,
+    repeating-linear-gradient(
+      to bottom,
+      var(--line-strong) 0 5px,
+      transparent 5px 6px
+    );
 }
 
-.tabs {
-  display: flex;
-  gap: 2px;
-}
+.tabs { display: flex; gap: 2px; }
 
 .tab {
   flex: 1;
-  padding: 8px 4px 10px;
+  padding: 8px 4px 9px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  color: var(--text-dim);
+  color: var(--mist);
   font: inherit;
   font-weight: 550;
   cursor: pointer;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }
 
-.tab:hover { color: var(--text); background: var(--bg-raised); }
-.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tab:hover { color: var(--text); background: var(--ink-raised); }
+/* Jade marks the live view -- a position you can act on, not static chrome. */
+.tab[aria-selected="true"] { color: var(--jade); border-bottom-color: var(--jade); }
 .tab[hidden] { display: none; }
 
 .view[hidden] { display: none; }
 [hidden] { display: none !important; }
-
-.follow-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.followed-card { margin-top: 12px; overflow-wrap: anywhere; }
-.followed-card .series-head > div { min-width: 0; }
-#following-status:empty { display: none; }
 
 /* ------------------------------- page layout ------------------------------ */
 
 .layout {
   max-width: var(--page-max);
   margin: 0 auto;
-  padding: 16px var(--page-pad) 48px;
+  padding: 18px var(--page-pad) 48px;
 }
 
-.col-title {
-  margin: 0 0 10px;
-  font-size: 12px;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-dim);
-}
+.col-title { margin: 0 0 10px; color: var(--mist); }
 
-/* A wide window gets two columns: browsing on the left, the queue pinned on
-   the right so a running download stays visible while you look for the next
-   series. Narrow falls back to the tabbed single column. */
+/* A wide window splits: browsing left, queue pinned right so a running
+   download stays visible while you look for the next series. */
 @media (min-width: 900px) {
   .layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-columns: minmax(0, 1fr) 360px;
     gap: 28px;
     align-items: start;
   }
 
   .col-queue {
     position: sticky;
-    top: 76px;
-    max-height: calc(100vh - 96px);
+    top: 78px;
+    max-height: calc(100vh - 98px);
     overflow-y: auto;
   }
 
-  .tabs { max-width: 320px; }
+  .tabs { max-width: 340px; }
   .tab { flex: 0 0 auto; padding-inline: 16px; }
 }
 
-/* On a narrow window the queue column is just another tabbed view. */
 @media (max-width: 899px) {
   .col-title { display: none; }
 }
 
 /* ------------------------------- controls -------------------------------- */
 
-label.field {
-  display: block;
-  margin-bottom: var(--gap);
-}
+label.field { display: block; margin-bottom: var(--gap); }
 
 label.field > span {
   display: block;
-  margin-bottom: 5px;
-  color: var(--text-dim);
-  font-size: 11.5px;
-  font-weight: 550;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  color: var(--mist);
 }
 
 input[type="text"],
@@ -206,19 +237,31 @@ input[type="search"],
 input[type="number"],
 select {
   width: 100%;
-  padding: 8px 10px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-strong);
+  padding: 9px 11px;
+  background: var(--ink-sunk);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   color: var(--text);
   font: inherit;
 }
 
+input::placeholder { color: var(--mist-faint); }
+
 input:focus-visible,
 select:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--jade);
+  outline-offset: 2px;
+}
+
+/* A range like "1-25" is the content, so it is set as content: tabular and
+   a step up in size from the label that introduces it. */
+#range-input {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  letter-spacing: 0.02em;
 }
 
 .row { display: flex; gap: 8px; }
@@ -226,59 +269,100 @@ button:focus-visible {
 .row .grow-2 { flex: 2; }
 
 button {
-  padding: 8px 14px;
+  padding: 9px 14px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-strong);
-  background: var(--bg-raised);
+  border: 1px solid var(--line-strong);
+  background: var(--ink-raised);
   color: var(--text);
   font: inherit;
   font-weight: 550;
   cursor: pointer;
 }
 
-button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
+button:hover:not(:disabled) { border-color: var(--jade); color: var(--jade); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 button.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+  background: var(--jade);
+  border-color: var(--jade);
+  color: #05201c;
+  font-weight: 650;
 }
-button.primary:hover:not(:disabled) { background: var(--accent-hover); color: #fff; }
+button.primary:hover:not(:disabled) {
+  background: var(--jade-lift);
+  border-color: var(--jade-lift);
+  color: #05201c;
+}
+
+button.block { width: 100%; }
 
 .checkbox {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   margin-bottom: var(--gap);
   cursor: pointer;
 }
-.checkbox input { width: 15px; height: 15px; accent-color: var(--accent); }
+.checkbox input { width: 15px; height: 15px; accent-color: var(--jade); flex: none; }
+.checkbox input:disabled { cursor: not-allowed; }
+.checkbox:has(input:disabled) { opacity: 0.5; cursor: not-allowed; }
+
+a { color: var(--jade); }
+
+/* -------------------------------- panels --------------------------------- */
+
+.panel {
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--ink-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.panel h2 { margin: 0 0 6px; font-size: 14px; letter-spacing: -0.01em; }
+
+.stitch-options { background: var(--ink-sunk); }
+
+details.settings {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+details.settings summary {
+  cursor: pointer;
+  color: var(--mist);
+  font-weight: 550;
+  margin-bottom: 10px;
+}
+details.settings summary:hover { color: var(--text); }
 
 /* -------------------------------- cards ---------------------------------- */
 
 .card {
   display: flex;
-  gap: 10px;
+  gap: 11px;
   padding: 9px;
   margin-bottom: 8px;
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
+  background: var(--ink-raised);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
   cursor: pointer;
   text-align: left;
   width: 100%;
   align-items: center;
+  color: var(--text);
 }
 
-.card:hover { border-color: var(--accent); }
+.card:hover { border-color: var(--jade); }
 
+/* Cover art keeps the tall proportion of a series thumbnail rather than being
+   squared off into a generic avatar. */
 .card img {
-  width: 44px;
+  width: 42px;
   height: 58px;
   object-fit: cover;
-  border-radius: 5px;
-  background: var(--bg-input);
+  border-radius: 4px;
+  background: var(--ink-sunk);
   flex: none;
 }
 
@@ -289,125 +373,286 @@ button.primary:hover:not(:disabled) { background: var(--accent-hover); color: #f
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.card .sub { color: var(--text-dim); font-size: 12px; }
+.card .sub { color: var(--mist); font-size: 12px; }
+
+.results { margin-top: 2px; }
+
+@media (min-width: 640px) {
+  .results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 8px;
+  }
+  .results .card { margin-bottom: 0; }
+}
 
 /* ------------------------------ series view ------------------------------ */
 
 .series-head {
   display: flex;
-  gap: 12px;
-  padding-bottom: 12px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--border);
+  gap: 13px;
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--line);
 }
 .series-head img {
-  width: 64px;
+  width: 62px;
   height: 84px;
   object-fit: cover;
   border-radius: var(--radius-sm);
-  background: var(--bg-raised);
+  background: var(--ink-sunk);
   flex: none;
 }
-.series-head h2 { margin: 0 0 2px; font-size: 15px; }
-.series-head .sub { color: var(--text-dim); font-size: 12px; }
+.series-head h2 { margin: 0 0 3px; font-size: 15px; letter-spacing: -0.01em; }
+.series-head .sub { color: var(--mist); font-size: 12px; }
 
 .hint {
-  color: var(--text-faint);
+  color: var(--mist-faint);
   font-size: 11.5px;
-  margin: -6px 0 var(--gap);
+  margin: 0 0 var(--gap);
 }
 
-/* ------------------------------ queue view ------------------------------- */
+/* Pull a hint up only where it explains the field directly above it. Applying
+   the negative margin to every .hint made hints that follow a button or a
+   checkbox ride up into it. */
+label.field + .hint { margin-top: -6px; }
+
+/* Chapter list: the number leads, tabular so the column aligns. */
+.chapter {
+  display: grid;
+  grid-template-columns: 54px 1fr auto;
+  gap: 9px;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+}
+.chapter:first-of-type { border-top: 0; }
+.chapter .num {
+  color: var(--mist-faint);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+.chapter .note { color: var(--mist); font-size: 11px; }
+
+/* ------------------------------ queue view -------------------------------
+ *
+ * The signature. A chapter is N images stacked top to bottom, so each one is
+ * drawn as a vertical trough that fills downward, hairline-ruled once per
+ * page. Side by side, a running job looks like a set of webtoon strips being
+ * assembled in reading order -- the fill level is pages arrived, the rules are
+ * the page count, and the direction is the direction you would read it.
+ */
 
 .job {
-  padding: 11px;
+  padding: 13px;
   margin-bottom: 10px;
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
+  background: var(--ink-raised);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
 }
 
 .job-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 9px;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 4px;
 }
-.job-head strong { font-size: 13px; }
+.job-head strong {
+  font-size: 13px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.job-head button { padding: 4px 9px; font-size: 11.5px; }
 
-.chapter {
-  display: grid;
-  grid-template-columns: 52px 1fr auto;
-  gap: 8px;
-  align-items: center;
-  padding: 4px 0;
-  font-size: 12px;
+.job-site {
+  color: var(--mist-faint);
+  font-size: 11px;
+  margin-bottom: 12px;
 }
-.chapter .num { color: var(--text-faint); font-variant-numeric: tabular-nums; }
-.chapter .note { color: var(--text-dim); font-size: 11px; }
 
-.bar {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--bg-input);
-  overflow: hidden;
+.job-body { display: flex; gap: 16px; align-items: flex-start; }
+
+/* The display voice: chapters done over chapters asked for. */
+.job-count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
-.bar > i {
+.job-count b {
   display: block;
-  height: 100%;
-  background: var(--accent);
-  transition: width 0.2s ease;
+  font-size: 27px;
+  font-weight: 640;
+  letter-spacing: -0.02em;
+  color: var(--text);
 }
-
-.pill {
-  padding: 1px 7px;
-  border-radius: 20px;
-  font-size: 10.5px;
+.job-count b i { font-style: normal; color: var(--mist-faint); font-weight: 450; }
+.job-count span {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
   font-weight: 650;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
+  letter-spacing: 0.12em;
+  color: var(--mist-faint);
 }
-.pill.queued   { background: var(--bg-input); color: var(--text-faint); }
-.pill.running  { background: var(--accent-soft); color: var(--accent); }
-.pill.done     { background: rgba(63, 185, 80, 0.15); color: var(--ok); }
-.pill.partial  { background: rgba(210, 153, 34, 0.15); color: var(--warn); }
-.pill.failed   { background: rgba(242, 109, 109, 0.15); color: var(--danger); }
-.pill.cancelled{ background: var(--bg-input); color: var(--text-faint); }
-.pill.skipped-protected { background: rgba(163, 113, 247, 0.15); color: var(--protected); }
+
+.strip-rack {
+  display: flex;
+  gap: 5px;
+  align-items: flex-end;
+  overflow-x: auto;
+  padding-bottom: 3px;
+  scrollbar-width: thin;
+}
+
+.strip { flex: none; width: 30px; text-align: center; }
+
+.strip-trough {
+  position: relative;
+  height: 74px;
+  border-radius: 3px;
+  background-color: var(--ink-sunk);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+/* One hairline per page. The rules are drawn only once the page count is known
+   (.ruled, with --tick set per chapter); a queued chapter shows an empty trough
+   rather than inventing a page count it hasn't fetched yet. */
+.strip-trough.ruled {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--tick) - 1px),
+    color-mix(in srgb, var(--paper) 13%, transparent) calc(var(--tick) - 1px),
+    color-mix(in srgb, var(--paper) 13%, transparent) var(--tick)
+  );
+}
+
+/* Pages arrive as paper, stacking from the top down. */
+.strip-fill {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 0;
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+  transition: height 0.25s ease;
+}
+
+/* Running is the loudest strip in the rack: it is what is happening now. Every
+   other state is a result you can read at your leisure. */
+.strip.running .strip-trough {
+  border-color: color-mix(in srgb, var(--jade) 65%, var(--line));
+  background-color: color-mix(in srgb, var(--jade) 12%, var(--ink-sunk));
+}
+/* The write head: jade only while something is actually moving. */
+.strip.running .strip-fill { box-shadow: 0 2px 0 0 var(--jade), 0 0 10px 1px var(--jade-wash); }
+.strip.done .strip-fill { background: var(--paper); }
+/* Gold marks the gap, but quietly — a partial chapter still finished most of
+   its pages, so it must not shout over the one still running. */
+.strip.partial .strip-fill { background: color-mix(in srgb, var(--gold) 42%, var(--paper)); }
+.strip.failed .strip-fill { background: color-mix(in srgb, var(--seal) 70%, transparent); }
+.strip.cancelled .strip-fill { background: color-mix(in srgb, var(--mist-faint) 55%, transparent); }
+
+/* Locked chapters stay empty and get the seal hatch: nothing arrives, and the
+   reason is ownership, not failure. */
+.strip.skipped-protected .strip-trough {
+  border-color: color-mix(in srgb, var(--seal) 50%, var(--line));
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 4px,
+    var(--seal-wash) 4px 8px
+  );
+}
+
+.strip-no {
+  margin-top: 6px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mist);
+  letter-spacing: 0.01em;
+}
+.strip.running .strip-no { color: var(--text); }
+.strip.skipped-protected .strip-no { color: var(--seal); }
+
+.strip-cap { display: block; margin-top: 10px; color: var(--mist-faint); }
+
+/* A note replaces the rack when a chapter has something to say instead of
+   something to show. */
+.job-note {
+  margin-top: 10px;
+  color: var(--mist);
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .job-body { flex-direction: column; gap: 12px; }
+  .job-count b { font-size: 24px; }
+}
+
+/* -------------------------------- status --------------------------------- */
+
+.pill {
+  padding: 2px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex: none;
+}
+.pill.queued    { background: var(--ink-sunk); color: var(--mist-faint); }
+.pill.running   { background: var(--jade-wash); color: var(--jade); }
+.pill.done      { background: var(--jade-wash); color: var(--jade); }
+.pill.partial   { background: var(--gold-wash); color: var(--gold); }
+.pill.failed    { background: var(--seal-wash); color: var(--seal); }
+.pill.cancelled { background: var(--ink-sunk); color: var(--mist-faint); }
+.pill.skipped-protected { background: var(--seal-wash); color: var(--seal); }
+
+/* ------------------------------ following -------------------------------- */
+
+.follow-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.followed-card { margin-top: 12px; overflow-wrap: anywhere; }
+.followed-card .series-head > div { min-width: 0; }
+#following-status:empty { display: none; }
 
 /* ------------------------------- messages -------------------------------- */
 
 .notice {
   padding: 10px 12px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg-raised);
-  color: var(--text-dim);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--line-strong);
+  background: var(--ink-raised);
+  color: var(--mist);
   font-size: 12px;
   margin-bottom: var(--gap);
+  overflow-wrap: anywhere;
 }
-.notice.error   { border-color: var(--danger); color: var(--danger); }
+.notice.error {
+  border-color: color-mix(in srgb, var(--seal) 40%, var(--line));
+  border-left-color: var(--seal);
+  color: var(--seal);
+}
+/* Protected is a deliberate outcome, not a failure. Only the left rule carries
+   the seal — a full wash made "8 of 12 chapters are free" read as an error. */
 .notice.protected {
-  border-color: var(--protected);
-  color: var(--text);
-  background: rgba(163, 113, 247, 0.08);
+  border-left-color: var(--seal);
 }
 .notice strong { color: var(--text); }
 
 .empty {
-  padding: 32px 16px;
+  padding: 34px 16px;
   text-align: center;
-  color: var(--text-faint);
+  color: var(--mist-faint);
   font-size: 12px;
 }
 
 .spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--border-strong);
-  border-top-color: var(--accent);
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--jade);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   display: inline-block;
@@ -416,42 +661,6 @@ button.primary:hover:not(:disabled) { background: var(--accent-hover); color: #f
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .spinner { animation-duration: 2s; }
-  .bar > i { transition: none; }
-}
-
-details.settings {
-  margin-top: 14px;
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
-}
-details.settings summary {
-  cursor: pointer;
-  color: var(--text-dim);
-  font-weight: 550;
-  margin-bottom: 10px;
-}
-
-/* ------------------------------- components ------------------------------- */
-
-/* Groups the input controls so they read as one block against the page
-   background now that there is room around them. */
-.panel {
-  padding: 16px;
-  margin-bottom: 16px;
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-button.block { width: 100%; }
-
-/* Search results become a grid once there is width for more than one column. */
-@media (min-width: 640px) {
-  .results {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 8px;
-  }
-  .results .card { margin-bottom: 0; }
+  .spinner { animation-duration: 2.4s; }
+  .strip-fill { transition: none; }
 }

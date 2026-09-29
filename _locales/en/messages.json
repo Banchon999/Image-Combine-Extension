@@ -27,6 +27,9 @@
   "backupHint": { "message": "Stored in this browser. Export a backup before removing or reinstalling the extension." },
   "seriesEmpty": { "message": "Pick a series from Search, or paste a link." },
   "queueEmpty": { "message": "No downloads yet." },
+  "cancelJob": { "message": "Cancel" },
+  "jobCountLabel": { "message": "chapters" },
+  "stripCaption": { "message": "pages, top to bottom" },
 
   "uiLanguageLabel": { "message": "Interface language" },
 

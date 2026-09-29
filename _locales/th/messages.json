@@ -27,6 +27,9 @@
   "backupHint": { "message": "ข้อมูลเก็บในเบราว์เซอร์นี้ โปรดสำรองก่อนลบหรือติดตั้งส่วนขยายใหม่" },
   "seriesEmpty": { "message": "เลือกเรื่องจากหน้าค้นหา หรือวางลิงก์" },
   "queueEmpty": { "message": "ยังไม่มีรายการดาวน์โหลด" },
+  "cancelJob": { "message": "ยกเลิก" },
+  "jobCountLabel": { "message": "ตอน" },
+  "stripCaption": { "message": "หน้า เรียงบนลงล่าง" },
 
   "uiLanguageLabel": { "message": "ภาษาหน้าจอ" },
 
