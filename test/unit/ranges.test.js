@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseRange, describeSelection, toRangeSpec } from '../../src/common/ranges.js';
+import { parseRange, describeSelection, toRangeSpec, readableRange } from '../../src/common/ranges.js';
 
 // A series with a deliberate gap (no chapter 4) and non-contiguous numbering,
 // which is what makes selecting against the real list matter.
@@ -115,4 +115,21 @@ test('toRangeSpec output parses back to exactly the same selection', () => {
   for (const chosen of [[1, 2, 3], [0, 1, 2, 2.5, 3, 4], [152.1, 152.2], [1, 2, 3, 4, 152, 152.1], [2.5]]) {
     assert.deepEqual(parseRange(toRangeSpec(chosen, WITH_SIDE), WITH_SIDE), chosen);
   }
+});
+
+test('readableRange names a selection for people, not for the parser', () => {
+  const all = Array.from({ length: 30 }, (_, i) => i + 1);
+  assert.equal(readableRange(all.slice(0, 25), all), 'Ch. 1-25');
+  assert.equal(readableRange([2, 3], all), 'Ch. 2-3', 'two chapters read as a range, never "2,3"');
+  assert.equal(readableRange([5], all), 'Ch. 5');
+  assert.equal(readableRange([1, 2, 3, 5, 8, 9, 10], all), 'Ch. 1-3, 5, 8-10');
+  // Too many pieces stays short instead of a wall of numbers.
+  assert.equal(readableRange([1, 3, 5, 7, 9], all), 'Ch. 1-9 (5 chapters)');
+  assert.equal(readableRange([1, 2, 4], all, { chapter: 'ตอน', chapters: 'ตอน' }), 'ตอน 1-2, 4');
+  // A paid side chapter between two included ones shows as a gap.
+  assert.equal(readableRange([152, 153], [152, 152.5, 153]), 'Ch. 152, 153');
+  assert.equal(readableRange([152, 152.5, 153], [152, 152.5, 153]), 'Ch. 152-153');
+  // Without the series list, only whole numbers in a row are joined.
+  assert.equal(readableRange([4, 5, 7]), 'Ch. 4-5, 7');
+  assert.equal(readableRange([]), '');
 });

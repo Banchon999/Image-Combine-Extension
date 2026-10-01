@@ -12,14 +12,14 @@
 import { STATUS } from '../common/messages.js';
 import { pool, withRetry, delay } from '../common/pool.js';
 import { normalizeSettings } from '../common/settings.js';
-import { archivePath, imagePath, imageExtension, padChapter, chapterFolderName, seriesArchivePath } from '../common/filenames.js';
-import { parseRange, toRangeSpec } from '../common/ranges.js';
+import { archivePath, imagePath, imageExtension, padChapter, chapterFolderName, seriesBundlePath } from '../common/filenames.js';
+import { parseRange, readableRange } from '../common/ranges.js';
 import { CancelledError, FetchError, ProtectedContentError, RefererRuleError } from '../common/errors.js';
 import { getAdapterById, resolveUrl } from '../adapters/registry.js';
 import { buildCbz } from './convert/cbz.js';
 import { buildPdf } from './convert/pdf.js';
 
-// Peak memory while building a whole-series bundle is roughly twice the total
+// Peak memory while building a whole-selection bundle is roughly twice the total
 // image bytes (the held pages plus the assembled Blob). Refuse past this with a
 // clear message rather than risk an out-of-memory crash in the offscreen
 // document; per-chapter mode has no such ceiling.
@@ -214,6 +214,45 @@ export function createEngine(/** @type {EngineIO} */ io) {
     return { format: settings.format, pages: pages.length, cleaned: stagedIds.length };
   }
 
+  /**
+   * One chapter's files inside the selection ZIP, in the "Save as" format:
+   * "001 - Title.pdf", "001 - Title.cbz", or a "001 - Title/" folder of
+   * images. Stitching, when on, replaces the pages first, as it does for
+   * separate files.
+   */
+  async function bundleEntries({ series, chapter, pages, settings, signal, progress }) {
+    const folder = chapterFolderName(chapter.number, chapter.title, settings.padWidth);
+    let output = pages;
+    if (settings.stitchEnabled) {
+      if (!io.stitchPages) throw new Error('Image stitching is unavailable in this browser.');
+      output = [];
+      for await (const page of io.stitchPages(pages, settings, signal, progress)) {
+        if (signal?.aborted) throw new CancelledError();
+        output.push(page);
+      }
+      if (!output.length) throw new Error('Stitching returned no images.');
+    }
+    const pageName = (page) =>
+      `${padChapter(page.index, 3)}.${imageExtension(settings.stitchEnabled ? '' : page.url, page.mimeType)}`;
+    const bytes = async (blob) => new Uint8Array(await blob.arrayBuffer());
+
+    if (settings.format === 'pdf') {
+      const jpegPages = [];
+      // Stitched parts are already JPEG for PDF; never recompress them.
+      for (const page of output) jpegPages.push(!settings.stitchEnabled && io.toJpeg ? await io.toJpeg(page) : page);
+      const pdf = buildPdf(
+        jpegPages.map((page) => ({ data: page.data, width: page.width, height: page.height })),
+        { title: `${series.title} - ${chapter.title ?? chapter.number}`, author: series.author },
+      );
+      return [{ name: `${folder}.pdf`, data: await bytes(pdf) }];
+    }
+    if (settings.format === 'cbz') {
+      const cbz = buildCbz(output.map((page) => ({ name: pageName(page), data: page.data })));
+      return [{ name: `${folder}.cbz`, data: await bytes(cbz) }];
+    }
+    return output.map((page) => ({ name: `${folder}/${pageName(page)}`, data: page.data }));
+  }
+
   async function runJob({ jobId, adapterId, ref, selection, settings: rawSettings }) {
     const settings = normalizeSettings(rawSettings);
     const controller = new AbortController();
@@ -259,13 +298,9 @@ export function createEngine(/** @type {EngineIO} */ io) {
       }));
       emit(job);
 
-      // One archive for the whole selection, in chapter order, named by range.
-      // Only cbz/zip can bundle; pdf/raw and stitching keep one file per chapter.
-      const bundle =
-        settings.bundleSeries === true &&
-        (settings.format === 'cbz' || settings.format === 'zip') &&
-        !settings.stitchEnabled &&
-        chosen.length > 0;
+      // One ZIP for the whole selection, in chapter order. Each chapter inside
+      // follows the "Save as" format, stitched or not.
+      const bundle = settings.bundleSeries === true && chosen.length > 0;
       const bundleParts = bundle ? new Array(chosen.length) : null;
       let bundleBytes = 0;
       let bundleOverflow = false;
@@ -294,25 +329,22 @@ export function createEngine(/** @type {EngineIO} */ io) {
             if (pages.length === 0) {
               entry.status = STATUS.FAILED;
               entry.note = failures[0]?.reason ?? 'No pages could be downloaded';
+            } else if (settings.stitchEnabled && failures.length) {
+              throw new FetchError(`${failures.length} source image(s) failed. Refusing to stitch an incomplete chapter; retry or disable stitching.`);
             } else if (bundle) {
-              // Defer writing: hold each chapter's pages in its own in-archive
-              // folder so page order survives across chapters, then save one
-              // archive after every chapter is fetched.
-              const folder = chapterFolderName(chapter.number, chapter.title, settings.padWidth);
-              const entries = pages.map((page) => ({
-                name: `${folder}/${padChapter(page.index, 3)}.${imageExtension(page.url, page.mimeType)}`,
-                data: page.data,
-              }));
+              // Defer writing: keep each chapter's files under its own name so
+              // order survives, then save one ZIP after every chapter is done.
+              const entries = await bundleEntries({ series, chapter, pages, settings, signal,
+                progress: (note) => { entry.note = note; emit(job); } });
               bundleBytes += entries.reduce((sum, e) => sum + e.data.byteLength, 0);
               if (bundleBytes > MAX_BUNDLE_BYTES) {
                 bundleOverflow = true;
-                throw new Error('This series bundle is too large to build in memory. Download a smaller chapter range, or turn off "one archive per series".');
+                throw new Error('This selection is too large to build into one ZIP in memory. Download a smaller chapter range, or turn off "one ZIP".');
               }
               bundleParts[index] = { number: chapter.number, entries };
               entry.status = failures.length ? STATUS.PARTIAL : STATUS.DONE;
-              entry.note = failures.length ? `${failures.length} image(s) failed` : 'Added to the series archive';
+              entry.note = failures.length ? `${failures.length} image(s) failed` : 'Added to the ZIP';
             } else {
-              if (settings.stitchEnabled && failures.length) throw new FetchError(`${failures.length} source image(s) failed. Refusing to stitch an incomplete chapter; retry or disable stitching.`);
               const output=await writeChapter({ series, chapter, pages, settings, signal,
                 progress:note=>{entry.note=note;emit(job);} });
               entry.status = failures.length ? STATUS.PARTIAL : STATUS.DONE;
@@ -335,18 +367,20 @@ export function createEngine(/** @type {EngineIO} */ io) {
 
       if (bundle && !signal.aborted) {
         if (bundleOverflow) {
-          throw new Error('Series bundle exceeded the in-memory size limit; nothing was written. Download a smaller chapter range, or turn off "one archive per series".');
+          throw new Error('The ZIP exceeded the in-memory size limit; nothing was written. Download a smaller chapter range, or turn off "one ZIP".');
         }
         // Assemble in the selection's original order, skipping chapters that
         // failed or were protected, so a gap never corrupts the archive.
         const ready = bundleParts.filter(Boolean);
         const entries = ready.flatMap((part) => part.entries);
         if (entries.length) {
-          const relative = seriesArchivePath({
-            seriesTitle: series.title,
-            rangeLabel: toRangeSpec(ready.map((part) => part.number), series.chapters.map((c) => c.number)),
-            format: settings.format,
-          });
+          // The user's own name, else "<series> Ch. 1-25" counting only the
+          // chapters that actually made it in.
+          const relative = seriesBundlePath(settings.bundleName || `${series.title} ${readableRange(
+            ready.map((part) => part.number),
+            series.chapters.map((c) => c.number),
+            settings.rangeWords,
+          )}`);
           await io.saveBlob(
             buildCbz(entries),
             settings.downloadFolder ? `${settings.downloadFolder}/${relative}` : relative,

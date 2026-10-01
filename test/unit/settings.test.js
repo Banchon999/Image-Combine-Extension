@@ -32,6 +32,11 @@ test('coerces flags to booleans', () => {
   assert.equal(normalizeSettings({ writeRawThenClean: 0 }).writeRawThenClean, false);
   assert.equal(normalizeSettings({ bundleSeries: 'true' }).bundleSeries, false, 'bundle only opts in on literal true');
   assert.equal(normalizeSettings({ bundleSeries: true }).bundleSeries, true);
+  assert.equal(normalizeSettings({ bundleName: '  My pick  ' }).bundleName, 'My pick');
+  assert.equal(normalizeSettings({ bundleName: 42 }).bundleName, '');
+  assert.equal(normalizeSettings({ bundleName: 'x'.repeat(400) }).bundleName.length, 150);
+  assert.deepEqual(normalizeSettings({}).rangeWords, { chapter: 'Ch.', chapters: 'chapters' });
+  assert.deepEqual(normalizeSettings({ rangeWords: { chapter: 'ตอน', chapters: '' } }).rangeWords, { chapter: 'ตอน', chapters: 'chapters' });
 });
 
 test('rejects unknown interface languages, keeps auto and shipped locales', () => {

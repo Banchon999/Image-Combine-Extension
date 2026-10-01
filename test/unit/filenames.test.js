@@ -10,7 +10,7 @@ import {
   safeDownloadPath,
   sanitizeFilename,
   chapterFolderName,
-  seriesArchivePath,
+  seriesBundlePath,
 } from '../../src/common/filenames.js';
 
 test('Korean filenames respect UTF-8 byte limits and retain extensions', () => {
@@ -19,14 +19,15 @@ test('Korean filenames respect UTF-8 byte limits and retain extensions', () => {
   assert.ok(path.endsWith('.cbz'));
 });
 
-test('seriesArchivePath names one file per series by chapter range, no subfolder', () => {
-  assert.equal(seriesArchivePath({ seriesTitle: 'My Series', rangeLabel: '1-25', format: 'cbz' }), 'My Series 1-25.cbz');
-  assert.equal(seriesArchivePath({ seriesTitle: 'My Series', rangeLabel: '1,3,5-9', format: 'zip' }), 'My Series 1,3,5-9.zip');
-  // Illegal characters in the title are sanitised, and the result stays a single segment.
-  const path = seriesArchivePath({ seriesTitle: 'a/b:c', rangeLabel: '1-2', format: 'cbz' });
+test('seriesBundlePath is one .zip at the top of the download folder', () => {
+  assert.equal(seriesBundlePath('My Series Ch. 1-25'), 'My Series Ch. 1-25.zip');
+  assert.equal(seriesBundlePath('My Series Ch. 1-3, 5, 8-10'), 'My Series Ch. 1-3, 5, 8-10.zip');
+  assert.equal(seriesBundlePath('ชื่อของฉัน.ZIP'), 'ชื่อของฉัน.zip', 'a typed .zip is not doubled');
+  const path = seriesBundlePath('a/b:c');
   assert.ok(!path.includes('/'));
-  assert.ok(path.endsWith('.cbz'));
-  assert.throws(() => seriesArchivePath({ seriesTitle: 'x', rangeLabel: '1', format: 'pdf' }), /Unsupported bundle format/);
+  assert.ok(path.endsWith('.zip'));
+  assert.equal(seriesBundlePath('  '), 'chapters.zip');
+  assert.equal(seriesBundlePath('../..'), 'chapters.zip');
 });
 
 test('chapterFolderName pairs a padded number with a sanitised title', () => {

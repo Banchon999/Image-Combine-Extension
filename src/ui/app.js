@@ -10,7 +10,7 @@
 
 import { MSG, STATUS } from '../common/messages.js';
 import { LANGUAGES, OUTPUT_FORMATS, UI_LANGUAGES } from '../common/settings.js';
-import { describeSelection, toRangeSpec } from '../common/ranges.js';
+import { toRangeSpec, readableRange } from '../common/ranges.js';
 import { buildSiteSearchUrl } from '../common/site-search.js';
 import { initialSelection, validateChapterSelection } from '../common/chapter-access.js';
 import { chapterIdentity, pendingChapters, FOLLOW_KEY } from '../common/following.js';
@@ -420,17 +420,39 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
   const bundle = el('input', { type: 'checkbox', id: 'bundle-toggle' });
   bundle.checked = state.settings.bundleSeries;
   const bundleLabel = el('label', { class: 'checkbox' }, [bundle,
-    el('span', { text: t('bundleSeries', undefined, 'รวมทุกตอนที่เลือกเป็นไฟล์เดียวต่อเรื่อง (ตั้งชื่อตามช่วงตอน)') })]);
+    el('span', { text: t('bundleSeries', undefined, 'Put every selected chapter in one ZIP file') })]);
   const bundleHint = el('p', { class: 'hint' });
-  // Bundling concatenates every chapter in memory, so it only applies to the
-  // archive formats and never to stitching (which is itself whole-chapter work).
-  const bundleApplies = () => (format.value === 'cbz' || format.value === 'zip') && !stitchToggle.checked;
+  // Per job, never saved: a name belongs to this series and selection only.
+  const bundleName = el('input', { type: 'text', id: 'bundle-name', maxlength: 150, autocomplete: 'off', spellcheck: 'false' });
+  const bundleNameField = el('label', { class: 'field' }, [
+    el('span', { text: t('bundleNameLabel', undefined, 'ZIP file name (leave empty for the default)') }), bundleName]);
+  const rangeWords = () => ({
+    chapter: t('rangeWordChapter', undefined, 'Ch.'),
+    chapters: t('rangeWordChapters', undefined, 'chapters'),
+  });
+  // The default the engine will use, shown as the placeholder. The engine
+  // recounts after downloading, so a chapter that fails is left out of it.
+  const defaultBundleName = () => {
+    try {
+      const { chosen } = validateChapterSelection(series.chapters, selection.value,
+        adapterId === 'kakao' && accountAccess.checked, adapterId);
+      return `${series.title} ${readableRange(chosen, series.chapters.map((c) => c.number), rangeWords())}`;
+    } catch {
+      return series.title;
+    }
+  };
   const refreshBundle = () => {
-    const ok = bundleApplies();
-    bundle.disabled = !ok;
-    bundleHint.textContent = ok
-      ? t('bundleHintOn', undefined, 'เช่น “ชื่อเรื่อง 1-25.cbz” ทั้งเรื่องในไฟล์เดียว แต่ละตอนอยู่ในโฟลเดอร์ย่อยภายใน ไฟล์ใหญ่มากอาจสร้างไม่ได้')
-      : t('bundleHintOff', undefined, 'ใช้ได้เฉพาะ CBZ/ZIP และต้องปิดการต่อภาพแนวตั้ง');
+    bundleNameField.hidden = !bundle.checked;
+    bundleName.placeholder = defaultBundleName();
+    const inside = {
+      pdf: t('bundleInsidePdf', undefined, 'Inside: one PDF per chapter, in chapter order.'),
+      cbz: t('bundleInsideCbz', undefined, 'Inside: one CBZ per chapter, in chapter order.'),
+      zip: t('bundleInsideImages', undefined, 'Inside: one folder of images per chapter, in chapter order.'),
+      raw: t('bundleInsideImages', undefined, 'Inside: one folder of images per chapter, in chapter order.'),
+    }[format.value];
+    bundleHint.textContent = bundle.checked
+      ? `${inside}${stitchToggle.checked ? ` ${t('bundleInsideStitched', undefined, 'Pages are stitched first.')}` : ''} ${t('bundleSizeHint', undefined, 'Very large selections may be too big to build.')}`
+      : t('bundleOffHint', undefined, 'Off: each chapter is saved as its own file.');
   };
 
   const stitchSettings={...STITCH_DEFAULTS,...state.settings};
@@ -490,7 +512,13 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
       if(stitchToggle.checked)stitchOptions({...getStitchSettings(),format:format.value});
       const { chosen, nonFreeCount } = validateChapterSelection(series.chapters, selection.value,
         adapterId === 'kakao' && accountAccess.checked, adapterId);
-      summary.textContent = t('willRequest', [describeSelection(chosen)], `Will request ${describeSelection(chosen)}.`) +
+      // "Ch. 1-3, 5 (4 chapters)": the exact chapters, never a span that
+      // suggests a skipped one is included.
+      const words = rangeWords();
+      // On screen there is room to list more pieces than a file name allows.
+      const label = readableRange(chosen, series.chapters.map((c) => c.number), { ...words, maxParts: 8 });
+      const what = chosen.length > 1 && !label.endsWith(')') ? `${label} (${chosen.length} ${words.chapters})` : label;
+      summary.textContent = t('willRequest', [what], `Will request ${what}.`) +
         (nonFreeCount ? t('kakaoAuthNote', [nonFreeCount], ` Kakao must authorize ${nonFreeCount} non-free chapter(s); enabling this option does not unlock them.`) : '');
       start.disabled = false;
     } catch (error) {
@@ -498,8 +526,9 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
       start.disabled = true;
     }
   };
-  selection.addEventListener('input', refreshSummary);
-  accountAccess.addEventListener('change', refreshSummary);
+  selection.addEventListener('input', () => { refreshSummary(); refreshBundle(); });
+  accountAccess.addEventListener('change', () => { refreshSummary(); refreshBundle(); });
+  bundle.addEventListener('change', refreshBundle);
   for(const node of [stitchToggle,stitchMode,stitchHeight,stitchCount,stitchWidth,stitchMime,stitchQuality,format]) {
     node.addEventListener('change',()=>{refreshStitch();refreshBundle();refreshSummary();});
     node.addEventListener('input',refreshSummary);
@@ -518,7 +547,9 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
           format: format.value,
           originalQuality: quality.checked,
           writeRawThenClean: cleanup.checked,
-          bundleSeries: bundle.checked && bundleApplies(),
+          bundleSeries: bundle.checked,
+          bundleName: bundle.checked ? bundleName.value.trim() : '',
+          rangeWords: rangeWords(),
           kakaoAccountAccess: adapterId === 'kakao' && accountAccess.checked,
           ...getStitchSettings(),
         },
@@ -555,6 +586,7 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
     el('label',{class:'checkbox'},[stitchToggle,el('span',{text:t('labelStitch',undefined,'ต่อภาพแนวตั้งแยกแต่ละตอน (Long images)')})]),
     stitchPanel,
     bundleLabel,
+    bundleNameField,
     bundleHint,
     el('label', { class: 'checkbox' }, [quality, el('span', { text: t('labelOriginalQuality', undefined, 'Original-quality images (larger files)') })]),
     el('label', { class: 'checkbox' }, [cleanup, el('span', { text: t('labelCleanup', undefined, 'Also write raw images, then delete them after converting') })]),

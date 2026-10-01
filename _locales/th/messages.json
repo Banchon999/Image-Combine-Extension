@@ -96,9 +96,16 @@
   "notFreePill": { "message": "ไม่ฟรี · ยังไม่ตรวจสิทธิ์" },
   "chapterListSummary": { "message": "รายการตอน ($1)", "placeholders": { "count": { "content": "$1" } } },
 
-  "bundleSeries": { "message": "รวมทุกตอนที่เลือกเป็นไฟล์เดียวต่อเรื่อง (ตั้งชื่อตามช่วงตอน)" },
-  "bundleHintOn": { "message": "เช่น “ชื่อเรื่อง 1-25.cbz” ทั้งเรื่องในไฟล์เดียว แต่ละตอนอยู่ในโฟลเดอร์ย่อยภายใน ไฟล์ใหญ่มากอาจสร้างไม่ได้" },
-  "bundleHintOff": { "message": "ใช้ได้เฉพาะ CBZ/ZIP และต้องปิดการต่อภาพแนวตั้ง" },
+  "bundleSeries": { "message": "รวมทุกตอนที่เลือกไว้ใน ZIP ไฟล์เดียว" },
+  "bundleNameLabel": { "message": "ชื่อไฟล์ ZIP (เว้นว่าง = ใช้ชื่อตามที่แสดง)" },
+  "rangeWordChapter": { "message": "ตอน" },
+  "rangeWordChapters": { "message": "ตอน" },
+  "bundleInsidePdf": { "message": "ข้างใน (ตาม “บันทึกเป็น”): PDF ตอนละไฟล์ เรียงตามเลขตอน" },
+  "bundleInsideCbz": { "message": "ข้างใน (ตาม “บันทึกเป็น”): CBZ ตอนละไฟล์ เรียงตามเลขตอน" },
+  "bundleInsideImages": { "message": "ข้างใน (ตาม “บันทึกเป็น”): โฟลเดอร์รูปตอนละโฟลเดอร์ เรียงตามเลขตอน" },
+  "bundleInsideStitched": { "message": "รูปจะถูกต่อแนวตั้งก่อนใส่" },
+  "bundleSizeHint": { "message": "ถ้าเลือกหลายตอนจนไฟล์ใหญ่มาก อาจสร้างไม่สำเร็จ" },
+  "bundleOffHint": { "message": "ปิดอยู่: แต่ละตอนบันทึกเป็นไฟล์แยก" },
 
   "stitchModeSmart": { "message": "Smart — คำนวณความสูงให้" },
   "stitchModeHeight": { "message": "กำหนดความสูงสูงสุดต่อภาพ" },
@@ -111,5 +118,5 @@
   "stitchFieldQuality": { "message": "คุณภาพ JPG/WebP (1–100)" },
   "stitchHintDesktop": { "message": "เพดานเดสก์ท็อป: กว้าง/สูง ≤ $1 px และพื้นที่รวม ≤ 268,435,456 พิกเซล (เฉพาะ canvas อาจใช้ RAM ถึง 1 GiB) ใช้ค่าเดียวกันทุกอุปกรณ์ ไม่ได้ตรวจ RAM ว่างหรือรับประกันว่าเครื่องจะทำไหว; WebP จำกัด 16,383 px ต่อด้าน ถ้าจะใช้ 18,000 ให้เลือก JPG/PNG; Smart ใช้เพดานนี้ในการแบ่ง ไม่ตัดตามช่องคำพูด ภาพถูกปรับความกว้างและพื้นหลังโปร่งใสเป็นสีขาว ถ้าจำนวนภาพน้อยเกินไปจะแจ้งขั้นต่ำ ไม่ทิ้งภาพส่วนท้าย ", "placeholders": { "max": { "content": "$1" } } },
   "stitchHintPdf": { "message": "PDF ใช้ภาพ JPG ภายใน โดยใช้คุณภาพที่ตั้งไว้" },
-  "stitchHintArchive": { "message": "เลือก Save as เป็น Raw images เพื่อบันทึกภาพแยก หรือ ZIP/CBZ เพื่อรวมเป็นไฟล์เดียว" }
+  "stitchHintArchive": { "message": "เลือก “บันทึกเป็น” = รูปภาพแยกไฟล์ เพื่อเก็บภาพแยก หรือ ZIP/CBZ เพื่อรวมแต่ละตอนเป็นไฟล์เดียว" }
 }
