@@ -97,5 +97,51 @@
         "image"
       ]
     }
+  },
+  {
+    "id": 5,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://nyxscans.com/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "nyxscans.com"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": 6,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://ezmanga.org/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "ezmanga.org"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest",
+        "image"
+      ]
+    }
   }
 ]

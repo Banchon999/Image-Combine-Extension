@@ -1,5 +1,15 @@
 # Webtoon Downloader
 
+## v1.3.0 — NYX Scans and EZ Manga
+
+- Paste a `nyxscans.com/series/...` or `ezmanga.org/series/...` link (the mirror `ezmanhwa.com` works too), or pick **NYX Scans** / **EZ Manga** in **Search site**.
+- Both read the JSON API the site's own reader calls (`api.nyxscans.com`, `vapi.ezmanga.org`), not the page HTML.
+- **Paid chapters are never downloaded.** Both sites sell chapters for coins, and NYX also unlocks some through an ad link. Every chapter carries explicit flags for this; a locked chapter is listed but left out of the pre-filled selection, refused before any request if chosen, and the reason names the price. The servers also withhold locked chapters' pages, and that answer is treated as protected, never worked around.
+- Text novels on both sites are left out of search and refused with a clear message, since there are no pages to download.
+- Slugs on these sites keep title punctuation (`i-only-need-the-duke's-child`, one ending in `.`); links, Following and file names all handle them.
+- New permissions: `*://*.nyxscans.com/*`, `*://*.ezmanga.org/*`, `*://*.ezmanhwa.com/*`. Reload the unpacked extension and accept them.
+- **Lua Comic (luacomic.org) is not included yet.** It could not be inspected from the build environment (Cloudflare blocks it there), so there was nothing verified to build on.
+
 ## v1.2.0 — Asura Scans
 
 - Paste any `asurascans.com/comics/...` series or chapter link, or pick **Asura Scans** in **Search site** (English or original titles, e.g. `화산`).
@@ -234,6 +244,8 @@ Requests ride on your browser's own session, so age-gated series work without th
 | **comic.naver.com** | Korean webtoon search, URL support, episode API, pagination, viewer images; full extension download still needs live verification |
 | **page.kakao.com** | Korean webtoon search; free downloads by default; experimental opt-in existing account access; no decryption or unlocking |
 | **asurascans.com** | English search, chapter listing, downloads; decimal side chapters; paid early-access chapters are skipped until they unlock |
+| **nyxscans.com** | English search, chapter listing, downloads; chapters sold for coins or unlocked through ads are skipped; novels excluded |
+| **ezmanga.org** (and ezmanhwa.com) | English search, chapter listing, downloads; paid chapters are skipped; novels excluded |
 
 ### Kakao Page: free by default, existing account access optional
 
