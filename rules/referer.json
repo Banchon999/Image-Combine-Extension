@@ -143,5 +143,28 @@
         "image"
       ]
     }
+  },
+  {
+    "id": 7,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://luacomic.org/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "luacomic.org"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest",
+        "image"
+      ]
+    }
   }
 ]

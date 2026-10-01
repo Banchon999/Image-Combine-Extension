@@ -1,5 +1,14 @@
 # Webtoon Downloader
 
+## v1.4.0 — Lua Comic
+
+- Paste a `luacomic.org/series/...` series or chapter link. There is no **Search site** entry for Lua Comic: its search endpoint could not be identified, so only links work.
+- Reads the series page for the series id, then the site's own JSON API (`api.luacomic.org`) for the chapter list and pages.
+- **Paid chapters are never downloaded.** Lua sells chapters for coins and lists each one's price. A priced chapter is listed but left out of the pre-filled selection, refused before any request if chosen, and the reason names the price. The server answers a paid chapter with a paywall and no pages; that answer is treated as protected, never worked around.
+- Lua Comic is behind Cloudflare. If it shows a check, open `luacomic.org` in the same browser, pass it, then try again.
+- Built and unit-tested against responses captured in a real browser; the build environment is blocked by Cloudflare, so it has not been run end to end there.
+- New permission: `*://*.luacomic.org/*`. Reload the unpacked extension and accept it.
+
 ## v1.3.0 — NYX Scans and EZ Manga
 
 - Paste a `nyxscans.com/series/...` or `ezmanga.org/series/...` link (the mirror `ezmanhwa.com` works too), or pick **NYX Scans** / **EZ Manga** in **Search site**.
@@ -246,6 +255,7 @@ Requests ride on your browser's own session, so age-gated series work without th
 | **asurascans.com** | English search, chapter listing, downloads; decimal side chapters; paid early-access chapters are skipped until they unlock |
 | **nyxscans.com** | English search, chapter listing, downloads; chapters sold for coins or unlocked through ads are skipped; novels excluded |
 | **ezmanga.org** (and ezmanhwa.com) | English search, chapter listing, downloads; paid chapters are skipped; novels excluded |
+| **luacomic.org** | Series and chapter links (no search), chapter listing, downloads; paid chapters are skipped |
 
 ### Kakao Page: free by default, existing account access optional
 
