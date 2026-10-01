@@ -160,7 +160,8 @@ async function main() {
       (await panel.locator('#search-lang option').count()) > 0,
       'app page populated the language selector',
     );
-    report((await panel.locator('.tab').count()) === 3, 'app page rendered its tabs');
+    // Search, Following, Series, Queue.
+    report((await panel.locator('.tab').count()) === 4, 'app page rendered its tabs');
 
     /*
      * The page opens as a full tab, so it must work at both a maximised width

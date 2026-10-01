@@ -14,6 +14,16 @@ const ORIGIN = 'https://www.webtoons.com';
 // A series with hundreds of episodes paginates ~10 per page; this only exists
 // so a markup change that breaks the "no new episodes" check cannot spin forever.
 const MAX_LIST_PAGES = 500;
+// The mobile site's episode API returns the whole list in one response
+// (pageSize up to at least 1000 was honoured), instead of ~10 per HTML page:
+// Tower of God is 1 request instead of 73.
+const EPISODE_API = 'https://m.webtoons.com/api/v1';
+const API_PAGE_SIZE = 1000;
+const MAX_API_PAGES = 20;
+const THUMB_ORIGIN = 'https://webtoon-phinf.pstatic.net';
+// Dates as the English site shows them ("Feb 23, 2025" for a late-evening US
+// release), in the ISO form the other sites use.
+const listDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
 
 /* ------------------------------------------------------------------ *
  * Pure URL helpers (no DOM, no network -- unit tested outside a browser)
@@ -58,6 +68,18 @@ export function parseUrl(input) {
 export function buildListUrl({ lang, genre, slug, seriesId }, page = 1) {
   const path = `/${lang}/${genre || 'unknown'}/${slug || 'series'}/list`;
   return `${ORIGIN}${path}?title_no=${encodeURIComponent(seriesId)}&page=${page}`;
+}
+
+/** CANVAS (fan) series live under /canvas/ (formerly /challenge/) and use their own endpoint. */
+export function isCanvas(ref) {
+  return ['canvas', 'challenge'].includes(String(ref?.genre ?? '').toLowerCase());
+}
+
+/** One page of the mobile episode API, oldest first. */
+export function buildEpisodesApiUrl(ref, cursor = 0) {
+  const kind = isCanvas(ref) ? 'canvas' : 'webtoon';
+  return `${EPISODE_API}/${kind}/${encodeURIComponent(ref.seriesId)}/episodes?pageSize=${API_PAGE_SIZE}` +
+    (cursor ? `&cursor=${encodeURIComponent(cursor)}` : '');
 }
 
 /** URL of the search results page for a language. */
@@ -136,6 +158,33 @@ export function parseChapterList(doc) {
     });
   }
   return chapters;
+}
+
+/**
+ * Episodes from the mobile episode API: {result:{episodeList, nextCursor}},
+ * where nextCursor is 0 on the last page. Throws on anything else, so the
+ * caller can fall back to the HTML list.
+ */
+export function parseEpisodesApi(json) {
+  const list = json?.result?.episodeList;
+  if (!Array.isArray(list)) throw new FetchError('WEBTOON episode API returned no episode list');
+  const chapters = [];
+  for (const row of list) {
+    const number = Number(row?.episodeNo);
+    if (!Number.isSafeInteger(number) || number < 0) continue;
+    const millis = Number(row.exposureDateMillis);
+    const link = String(row.viewerLink ?? '');
+    const thumb = String(row.thumbnail ?? '');
+    chapters.push({
+      number,
+      title: String(row.episodeTitle ?? '').replace(/\s+/g, ' ').trim() || `Episode ${number}`,
+      date: millis > 0 ? listDate.format(new Date(millis)) : '',
+      thumbnail: thumb.startsWith('/') ? `${THUMB_ORIGIN}${thumb}` : '',
+      url: link.startsWith('/') ? `${ORIGIN}${link}` : '',
+    });
+  }
+  const next = Number(json.result.nextCursor);
+  return { chapters, nextCursor: Number.isSafeInteger(next) && next > 0 ? next : 0 };
 }
 
 /** Highest `page=` number linked from the paginator, or 1 if unpaginated. */
@@ -229,11 +278,22 @@ export const webtoonsAdapter = {
   },
 
   async getSeries(ref, ctx) {
-    const firstPage = await ctx.fetchDoc(buildListUrl(ref, 1));
+    const [firstPage, fromApi] = await Promise.all([
+      ctx.fetchDoc(buildListUrl(ref, 1)),
+      listFromApi(ref, ctx).catch(() => null),
+    ]);
     const meta = parseSeriesMeta(firstPage);
+    const newest = parseChapterList(firstPage);
+
+    // Trust the API only if it has every episode the list page shows; if it
+    // ever drifts from the site, walk the HTML list as before.
+    if (fromApi?.length) {
+      const numbers = new Set(fromApi.map((chapter) => chapter.number));
+      if (newest.every((chapter) => numbers.has(chapter.number))) return { ...meta, chapters: fromApi };
+    }
 
     const byNumber = new Map();
-    for (const chapter of parseChapterList(firstPage)) byNumber.set(chapter.number, chapter);
+    for (const chapter of newest) byNumber.set(chapter.number, chapter);
 
     // The paginator only exposes a sliding window of page links, so the last
     // page is discovered by walking forward rather than read off page 1.
@@ -270,6 +330,21 @@ export const webtoonsAdapter = {
     return images;
   },
 };
+
+/** Every episode from the mobile API, following its cursor, ascending. */
+async function listFromApi(ref, ctx) {
+  const byNumber = new Map();
+  let cursor = 0;
+  for (let page = 0; page < MAX_API_PAGES; page++) {
+    if (ctx.signal?.aborted) break;
+    const { chapters, nextCursor } = parseEpisodesApi(await ctx.fetchJson(buildEpisodesApiUrl(ref, cursor)));
+    const before = byNumber.size;
+    for (const chapter of chapters) byNumber.set(chapter.number, chapter);
+    if (!nextCursor || nextCursor === cursor || byNumber.size === before) break;
+    cursor = nextCursor;
+  }
+  return [...byNumber.values()].sort((a, b) => a.number - b.number);
+}
 
 /** Throwing variant of parseUrl, for call sites that need a hard failure. */
 export function requireUrl(input) {

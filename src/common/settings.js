@@ -48,11 +48,15 @@ export const DEFAULT_SETTINGS = Object.freeze({
   /** Opt-in per job: request already accessible Kakao chapters using browser cookies. */
   kakaoAccountAccess: false,
   /**
-   * For cbz/zip: pack every selected chapter into one archive per series
-   * (named by the chapter range) instead of one file per chapter. Ignored for
-   * pdf/raw and when stitching is on.
+   * Pack every selected chapter into one ZIP instead of one file per chapter.
+   * Inside, each chapter follows `format` (a PDF, a CBZ, or a folder of
+   * images), stitched or not.
    */
   bundleSeries: false,
+  /** Per job: the ZIP's name. Empty means "<series> <chapter range>". */
+  bundleName: '',
+  /** Per job: words for the default range label, in the interface language. */
+  rangeWords: { chapter: 'Ch.', chapters: 'chapters' },
   /** Root folder inside the browser's Downloads directory. */
   downloadFolder: 'Webtoons',
   /** Search/content language (WEBTOON editions, Korean for NAVER/Kakao). */
@@ -96,6 +100,12 @@ export function normalizeSettings(input) {
   s.originalQuality = Boolean(s.originalQuality);
   s.writeRawThenClean = Boolean(s.writeRawThenClean);
   s.bundleSeries = s.bundleSeries === true;
+  s.bundleName = typeof s.bundleName === 'string' ? s.bundleName.trim().slice(0, 150) : '';
+  const word = (value, fallback) => (typeof value === 'string' && value.trim() ? value.trim().slice(0, 20) : fallback);
+  s.rangeWords = {
+    chapter: word(s.rangeWords?.chapter, DEFAULT_SETTINGS.rangeWords.chapter),
+    chapters: word(s.rangeWords?.chapters, DEFAULT_SETTINGS.rangeWords.chapters),
+  };
   // Never opt in on truthy strings such as "false" or old stored values.
   s.kakaoAccountAccess = s.kakaoAccountAccess === true;
   s.stitchEnabled = s.stitchEnabled === true;

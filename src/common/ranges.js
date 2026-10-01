@@ -155,3 +155,42 @@ export function toRangeSpec(numbers, available) {
   flush();
   return parts.join(',');
 }
+
+/**
+ * Readable chapter range for a file name: "Ch. 1-25", "Ch. 1-3, 5, 8-10".
+ *
+ * Unlike toRangeSpec this is never parsed back, so two adjacent chapters read
+ * "4-5" rather than "4,5". Runs only span chapters adjacent in `available`, so
+ * a skipped (paid or failed) chapter in the middle shows as a gap instead of
+ * being claimed by the range. Past `maxParts` pieces the label stays short:
+ * "Ch. 1-40 (12 chapters)".
+ *
+ * @param {number[]} numbers chapters actually included
+ * @param {number[]} [available] every chapter the series has
+ * @param {{chapter?: string, chapters?: string, maxParts?: number}} [words]
+ */
+export function readableRange(numbers, available, { chapter = 'Ch.', chapters = 'chapters', maxParts = 3 } = {}) {
+  const sorted = [...new Set(numbers)].sort((a, b) => a - b);
+  if (sorted.length === 0) return '';
+  const order = Array.isArray(available)
+    ? new Map([...new Set(available)].sort((a, b) => a - b).map((n, i) => [n, i]))
+    : null;
+  const adjacent = (a, b) => (order
+    ? order.has(a) && order.get(b) === order.get(a) + 1
+    : Number.isInteger(a) && b === a + 1);
+  const parts = [];
+  let start = sorted[0];
+  let previous = sorted[0];
+  for (const n of [...sorted.slice(1), null]) {
+    if (n !== null && adjacent(previous, n)) {
+      previous = n;
+      continue;
+    }
+    parts.push(start === previous ? String(start) : `${start}-${previous}`);
+    if (n !== null) start = previous = n;
+  }
+  const body = parts.length > maxParts
+    ? `${sorted[0]}-${sorted[sorted.length - 1]} (${sorted.length} ${chapters})`
+    : parts.join(', ');
+  return `${chapter} ${body}`.trim();
+}

@@ -136,32 +136,109 @@ test('runs a job end to end and writes one archive per chapter', async () => {
   assert.ok(saved.every((s) => s.type === 'application/octet-stream'));
 });
 
-test('bundleSeries packs the whole selection into one range-named archive', async () => {
-  const { io, saved } = recordingIo();
+/** Names and bytes of a stored (uncompressed) ZIP, in archive order. */
+async function zipEntries(blob) {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const view = new DataView(bytes.buffer);
+  const out = [];
+  for (let at = 0; view.getUint32(at, true) === 0x04034b50;) {
+    const size = view.getUint32(at + 18, true);
+    const nameLength = view.getUint16(at + 26, true);
+    const extra = view.getUint16(at + 28, true);
+    const name = new TextDecoder().decode(bytes.subarray(at + 30, at + 30 + nameLength));
+    const start = at + 30 + nameLength + extra;
+    out.push({ name, data: bytes.subarray(start, start + size) });
+    at = start + size;
+  }
+  return out;
+}
+
+function bundleIo(overrides) {
+  const { io, saved } = recordingIo(overrides);
   const blobs = [];
   const save = io.saveBlob;
   io.saveBlob = async (blob, name) => { blobs.push(blob); return save(blob, name); };
-  const job = await createEngine(io).runJob({ jobId: 'bundle', adapterId: 'stub', ref: {},
-    selection: 'all', settings: { ...baseSettings, format: 'cbz', bundleSeries: true } });
+  return { io, saved, blobs };
+}
 
-  assert.equal(job.status, STATUS.DONE);
-  assert.equal(saved.length, 1, 'one archive for the whole series, not one per chapter');
-  assert.equal(saved[0].filename, 'Webtoons/Stub Series 1-3.cbz');
-  assert.equal(saved[0].type, 'application/octet-stream');
-  // Each chapter's pages live under their own in-archive folder so order holds.
-  const text = new TextDecoder().decode(new Uint8Array(await blobs[0].arrayBuffer()));
-  for (const name of ['001 - Episode 1/001.jpg', '002 - Episode 2/003.jpg', '003 - Episode 3/002.jpg']) {
-    assert.ok(text.includes(name), `archive should contain ${name}`);
+test('one ZIP of images: a folder per chapter, in chapter order', async () => {
+  for (const format of ['zip', 'raw']) {
+    const { io, saved, blobs } = bundleIo();
+    const job = await createEngine(io).runJob({ jobId: `bundle-${format}`, adapterId: 'stub', ref: {},
+      selection: 'all', settings: { ...baseSettings, format, bundleSeries: true } });
+    assert.equal(job.status, STATUS.DONE);
+    assert.equal(saved.length, 1, 'one file for the whole selection');
+    assert.equal(saved[0].filename, 'Webtoons/Stub Series Ch. 1-3.zip');
+    const names = (await zipEntries(blobs[0])).map((e) => e.name);
+    assert.deepEqual(names, ['001 - Episode 1/001.jpg', '001 - Episode 1/002.jpg', '001 - Episode 1/003.jpg',
+      '002 - Episode 2/001.jpg', '002 - Episode 2/002.jpg', '002 - Episode 2/003.jpg',
+      '003 - Episode 3/001.jpg', '003 - Episode 3/002.jpg', '003 - Episode 3/003.jpg']);
   }
 });
 
-test('bundleSeries is ignored for pdf, keeping one file per chapter', async () => {
-  const { io, saved } = recordingIo();
-  const job = await createEngine(io).runJob({ jobId: 'bundle-pdf', adapterId: 'stub', ref: {},
-    selection: 'all', settings: { ...baseSettings, format: 'pdf', bundleSeries: true } });
-  assert.equal(job.status, STATUS.DONE);
-  assert.equal(saved.length, 3);
-  assert.ok(saved.every((s) => s.filename.endsWith('.pdf')));
+test('one ZIP of PDFs or CBZs: one file per chapter inside, in order', async () => {
+  for (const format of ['pdf', 'cbz']) {
+    const { io, saved, blobs } = bundleIo();
+    const job = await createEngine(io).runJob({ jobId: `bundle-${format}`, adapterId: 'stub', ref: {},
+      selection: 'all', settings: { ...baseSettings, format, bundleSeries: true } });
+    assert.equal(job.status, STATUS.DONE);
+    assert.equal(saved.length, 1);
+    assert.equal(saved[0].filename, 'Webtoons/Stub Series Ch. 1-3.zip');
+    const entries = await zipEntries(blobs[0]);
+    assert.deepEqual(entries.map((e) => e.name), [1, 2, 3].map((n) => `00${n} - Episode ${n}.${format}`));
+    for (const entry of entries) {
+      if (format === 'pdf') {
+        const text = new TextDecoder('latin1').decode(entry.data);
+        assert.ok(text.startsWith('%PDF-'));
+        assert.equal(text.match(/\/Type\s*\/Page\b/g)?.length, 3, 'three pages per chapter');
+      } else {
+        assert.deepEqual((await zipEntries(new Blob([entry.data]))).map((e) => e.name), ['001.jpg', '002.jpg', '003.jpg']);
+      }
+    }
+  }
+});
+
+test('one ZIP with stitching: stitched parts go inside, in the chosen format', async () => {
+  for (const format of ['zip', 'pdf', 'cbz']) {
+    const { io, saved, blobs } = bundleIo({
+      toJpeg: async () => { throw new Error('Must not recompress stitched PDF'); },
+      async *stitchPages(pages) {
+        assert.equal(pages.length, 3);
+        for (let index = 1; index <= 2; index++) yield { index, width: 700, height: 100, mimeType: 'image/jpeg', data: jpeg(700, 100) };
+      },
+    });
+    const job = await createEngine(io).runJob({ jobId: `bundle-stitch-${format}`, adapterId: 'stub', ref: {},
+      selection: '1-2', settings: { ...baseSettings, format, bundleSeries: true, stitchEnabled: true } });
+    assert.equal(job.status, STATUS.DONE, job.chapters.map((c) => c.note).join());
+    assert.equal(saved.length, 1);
+    assert.equal(saved[0].filename, 'Webtoons/Stub Series Ch. 1-2.zip');
+    const names = (await zipEntries(blobs[0])).map((e) => e.name);
+    assert.deepEqual(names, format === 'zip'
+      ? ['001 - Episode 1/001.jpg', '001 - Episode 1/002.jpg', '002 - Episode 2/001.jpg', '002 - Episode 2/002.jpg']
+      : [`001 - Episode 1.${format}`, `002 - Episode 2.${format}`]);
+  }
+});
+
+test('one ZIP uses the name the user typed', async () => {
+  const { io, saved } = bundleIo();
+  await createEngine(io).runJob({ jobId: 'bundle-named', adapterId: 'stub', ref: {}, selection: 'all',
+    settings: { ...baseSettings, format: 'cbz', bundleSeries: true, bundleName: 'อ่านบนรถไฟ.zip' } });
+  assert.equal(saved[0].filename, 'Webtoons/อ่านบนรถไฟ.zip');
+});
+
+test('the default ZIP name counts only chapters that made it in, in the interface words', async () => {
+  const adapter = stubAdapter({ chapters: [1, 2, 3, 4, 5] });
+  const getChapterImages = adapter.getChapterImages;
+  adapter.getChapterImages = async (ref, chapter, ...rest) => {
+    if (chapter.number === 3) throw new ProtectedContentError('Chapter 3 costs 10 coins.');
+    return getChapterImages(ref, chapter, ...rest);
+  };
+  const { io, saved } = bundleIo({ getAdapter: () => adapter });
+  const job = await createEngine(io).runJob({ jobId: 'bundle-gap', adapterId: 'stub', ref: {}, selection: 'all',
+    settings: { ...baseSettings, format: 'zip', bundleSeries: true, rangeWords: { chapter: 'ตอน', chapters: 'ตอน' } } });
+  assert.equal(job.status, STATUS.PARTIAL);
+  assert.equal(job.chapters[2].status, STATUS.SKIPPED_PROTECTED);
+  assert.equal(saved[0].filename, 'Webtoons/Stub Series ตอน 1-2, 4-5.zip');
 });
 
 test('honours the chapter selection', async () => {

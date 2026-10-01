@@ -1,5 +1,14 @@
 # Webtoon Downloader
 
+## v1.5.0 — One ZIP for many chapters, faster WEBTOON lists, clearer ranges
+
+- **One ZIP for the whole selection.** Tick *Put every selected chapter in one ZIP file*. Inside, each chapter follows **Save as**: one PDF per chapter, one CBZ per chapter, or one folder of images per chapter (ZIP / Raw images), always in chapter order. It now works with every format and together with vertical stitching (stitched parts go inside).
+- **Name the ZIP yourself**, or leave the box empty for the default: series title plus the chapters that actually made it in, e.g. `Tower of God Ch. 1-25.zip` (`ตอน 1-25` in the Thai interface). A paid or failed chapter in the middle shows as a gap (`Ch. 1-3, 5`) rather than being claimed by the range.
+- Replaces the earlier CBZ/ZIP-only bundle, which made one `.cbz` with chapter folders and could not be combined with stitching.
+- **Readable chapter ranges** everywhere a person reads them: `Ch. 2-3`, not `2,3`; the selection summary lists the exact chapters (`Ch. 1-3, 5 (4 chapters)`) instead of a span like `(1-5)` that looked like chapter 4 was included.
+- **WEBTOON chapter lists load in about a second.** The full list comes from the episode API the mobile site uses (1 request for Tower of God's 652 episodes instead of 73 pages; measured 1.6 s, previously about a minute). Before switching, it was compared against the HTML list on 7 series (originals, Thai, CANVAS) and matched exactly. If the API fails or disagrees with the list page's newest episodes, the old page-by-page walk is used.
+- No new permissions.
+
 ## v1.4.0 — Lua Comic
 
 - Paste a `luacomic.org/series/...` series or chapter link. There is no **Search site** entry for Lua Comic: its search endpoint could not be identified, so only links work.
@@ -85,9 +94,10 @@ JPG/WebP are re-encoded. Transparent backgrounds become white. An unsupported
 browser encoder is reported, not silently renamed to another extension.
 
 Containers: choose **Raw images** for separate stitched image files, **ZIP/CBZ**
-to bundle them, or **PDF** for one page per stitched part. PDF embeds JPEG, so
-the image-type selector is disabled in PDF mode. Outputs include `- stitched`
-in their chapter name. Turning stitching off preserves the original export path.
+to put each chapter's parts in one file, or **PDF** for one page per stitched
+part. With *one ZIP* on, those per-chapter outputs go inside a single ZIP. PDF embeds JPEG, so
+the image-type selector is disabled in PDF mode. Separate outputs include
+`- stitched` in their chapter name; inside one ZIP, chapters keep their plain names. Turning stitching off preserves the original export path.
 
 Only one stitching operation runs at a time. Input files remain compressed in
 memory; rendering uses one source bitmap and one output canvas at a time.

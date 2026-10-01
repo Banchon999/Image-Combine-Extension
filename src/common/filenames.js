@@ -156,15 +156,15 @@ export function chapterFolderName(chapterNumber, chapterTitle, padWidth = 3) {
 }
 
 /**
- * Relative path for a single whole-series archive, named by the chapter range.
+ * Relative path for the one ZIP that holds a whole selection.
  *
- * One file per series (e.g. "My Series 1-25.cbz") rather than the series
- * subfolder the per-chapter paths use, because a bundle is a single file.
+ * `name` is either the user's own name or the default "<series> <range>";
+ * a ".zip" they typed is not doubled. One file at the top of the download
+ * folder rather than in the series subfolder, because a bundle is one file.
  */
-export function seriesArchivePath({ seriesTitle, rangeLabel, format }) {
-  if (!['cbz', 'zip'].includes(format)) throw new Error(`Unsupported bundle format: ${format}`);
-  const stem = `${sanitizeSegment(seriesTitle)} ${sanitizeSegment(rangeLabel, 'chapters')}`.trim();
-  return buildPath([sanitizeFilename(`${stem}.${format}`)]);
+export function seriesBundlePath(name) {
+  const stem = sanitizeSegment(String(name ?? '').trim().replace(/\.zip$/i, ''), 'chapters');
+  return buildPath([sanitizeFilename(`${stem}.zip`)]);
 }
 
 /** Full relative path for one raw image inside a chapter folder. */
