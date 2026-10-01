@@ -543,3 +543,22 @@ test('ZIP output uses ZIP bytes, a .zip suffix, and a neutral MIME', async () =>
   assert.deepEqual([...bytes.slice(0,4)], [0x50,0x4b,3,4]);
   assert.ok(new TextDecoder().decode(bytes).includes('001.jpg'));
 });
+
+test('a stitched chapter without a title is named "001 - stitched", not "001 - - stitched"', async () => {
+  // Asura publishes many chapters with no title.
+  const untitled = { ...stubAdapter(), async getSeries() {
+    return { title: 'Untitled Series', chapters: [{ number: 1, title: '', url: 'https://stub.test/1' }] };
+  } };
+  for (const format of ['cbz', 'raw']) {
+    const { io, saved } = recordingIo({
+      getAdapter: () => untitled,
+      async *stitchPages() { yield { index: 1, width: 700, height: 100, mimeType: 'image/jpeg', data: jpeg(700, 100) }; },
+    });
+    const job = await createEngine(io).runJob({ jobId: `untitled-${format}`, adapterId: 'stub', ref: {}, selection: '1',
+      settings: { ...baseSettings, format, stitchEnabled: true } });
+    assert.equal(job.status, STATUS.DONE);
+    assert.equal(saved[0].filename, format === 'cbz'
+      ? 'Webtoons/Untitled Series/001 - stitched.cbz'
+      : 'Webtoons/Untitled Series/001 - stitched/001.jpg');
+  }
+});
