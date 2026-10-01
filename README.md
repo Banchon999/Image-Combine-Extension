@@ -1,5 +1,14 @@
 # Webtoon Downloader
 
+## v1.2.0 — Asura Scans
+
+- Paste any `asurascans.com/comics/...` series or chapter link, or pick **Asura Scans** in **Search site** (English or original titles, e.g. `화산`).
+- Reads the site's own JSON API (`api.asurascans.com`), which returns the full chapter list in one response and each page's dimensions.
+- Series are stored by their bare slug (`nano-machine`). Asura appends a site-wide suffix to every link (`nano-machine-3ec3b16f`) that rotates; old and new links resolve to the same series, so Following keeps working across a rotation.
+- **Paid early access is never downloaded.** Chapters still in early access are listed but left out of the pre-filled selection, refused before any request if chosen, and the reason names when they unlock. The server also withholds their pages; that response is treated as protected, never worked around.
+- Decimal side chapters (`152.1` … `152.6`) and chapter `0` are supported throughout: chapter selection (`152.5`, `150-153`), file names (`152.5` no longer overwrites `152`), and Following.
+- New permission: `*://*.asurascans.com/*`. Reload the unpacked extension and accept it.
+
 ## v1.0.9 — fixed desktop stitching limits
 
 This release supersedes the v1.0.8 mobile-oriented canvas limits below.
@@ -224,6 +233,7 @@ Requests ride on your browser's own session, so age-gated series work without th
 | **webtoons.com** | Fully supported — search, chapter listing, downloads, all 7 languages |
 | **comic.naver.com** | Korean webtoon search, URL support, episode API, pagination, viewer images; full extension download still needs live verification |
 | **page.kakao.com** | Korean webtoon search; free downloads by default; experimental opt-in existing account access; no decryption or unlocking |
+| **asurascans.com** | English search, chapter listing, downloads; decimal side chapters; paid early-access chapters are skipped until they unlock |
 
 ### Kakao Page: free by default, existing account access optional
 

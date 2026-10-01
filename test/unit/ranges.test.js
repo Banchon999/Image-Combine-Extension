@@ -87,3 +87,32 @@ test('toRangeSpec output round-trips through parseRange', () => {
     assert.deepEqual(parseRange(toRangeSpec(picked), available), picked);
   }
 });
+
+// Asura numbers side chapters with decimals (152.1 ... 152.6) and has chapter 0.
+const WITH_SIDE = [0, 1, 2, 2.5, 3, 4, 152, 152.1, 152.2, 153];
+
+test('decimal side chapters can be selected singly and as range ends', () => {
+  assert.deepEqual(parseRange('152.1', WITH_SIDE), [152.1]);
+  assert.deepEqual(parseRange('2-3', WITH_SIDE), [2, 2.5, 3]);
+  assert.deepEqual(parseRange('152-152.1', WITH_SIDE), [152, 152.1]);
+  assert.deepEqual(parseRange('152.1-', WITH_SIDE), [152.1, 152.2, 153]);
+  assert.deepEqual(parseRange('0', WITH_SIDE), [0]);
+  assert.throws(() => parseRange('2.', WITH_SIDE));
+  assert.throws(() => parseRange('.5', WITH_SIDE));
+});
+
+test('toRangeSpec never spans a chapter that lies between two selected ones', () => {
+  // Free 1, 2, 3 with a locked 2.5 between: "1-3" would select 2.5 too.
+  assert.equal(toRangeSpec([1, 2, 3], WITH_SIDE), '1,2,3');
+  assert.equal(toRangeSpec([0, 1, 2, 2.5, 3, 4], WITH_SIDE), '0-4');
+  assert.equal(toRangeSpec(WITH_SIDE, WITH_SIDE), '0-153');
+  // Without the series list, behaviour is unchanged.
+  assert.equal(toRangeSpec([1, 2, 3]), '1-3');
+  assert.equal(toRangeSpec([152, 152.1]), '152,152.1');
+});
+
+test('toRangeSpec output parses back to exactly the same selection', () => {
+  for (const chosen of [[1, 2, 3], [0, 1, 2, 2.5, 3, 4], [152.1, 152.2], [1, 2, 3, 4, 152, 152.1], [2.5]]) {
+    assert.deepEqual(parseRange(toRangeSpec(chosen, WITH_SIDE), WITH_SIDE), chosen);
+  }
+});

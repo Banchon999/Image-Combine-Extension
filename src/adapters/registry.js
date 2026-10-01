@@ -8,10 +8,11 @@
 import { webtoonsAdapter } from './webtoons.js';
 import { naverAdapter } from './naver.js';
 import { kakaoAdapter } from './kakao.js';
+import { asuraAdapter } from './asura.js';
 import { UnsupportedUrlError } from '../common/errors.js';
 
 /** Registration order is match order. */
-export const ADAPTERS = [webtoonsAdapter, naverAdapter, kakaoAdapter];
+export const ADAPTERS = [webtoonsAdapter, naverAdapter, kakaoAdapter, asuraAdapter];
 
 /** Look up an adapter by its id. */
 export function getAdapterById(id) {

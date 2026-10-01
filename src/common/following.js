@@ -4,8 +4,24 @@ export const MAX_FOLLOWED = 500;
 const MAX_CHAPTERS = 20000;
 const text = (value, max = 500) => String(value ?? '').slice(0, max);
 const numericId = value => /^\d{1,40}$/.test(String(value ?? ''));
+const ASURA_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/**
+ * Asura numbers side chapters with decimals (152.5); every other site uses
+ * whole numbers, and keeps that stricter check -- including on import.
+ */
+function validChapterNumber(adapterId, number) {
+  if (adapterId === 'asura') return Number.isFinite(number) && number >= 0 && number < 1e9;
+  return Number.isSafeInteger(number) && number >= 0;
+}
 
 export function cleanRef(adapterId, source) {
+  if (adapterId === 'asura') {
+    // Asura's stable id is the bare slug ("nano-machine"), not a number.
+    const slug = String(source?.seriesId ?? '');
+    if (slug.length > 200 || !ASURA_SLUG.test(slug)) throw new Error('Invalid followed series reference.');
+    return { seriesId: slug, lang: 'en' };
+  }
   if (!['webtoons', 'naver', 'kakao'].includes(adapterId) || !numericId(source?.seriesId)) {
     throw new Error('Invalid followed series reference.');
   }
@@ -30,8 +46,15 @@ export function followId(adapterId, source) {
   return [adapterId, ref.lang, ref.section ?? '', ref.seriesId].join(':');
 }
 
+/**
+ * The id a followed chapter is remembered by. Kakao and Asura use the site's
+ * own chapter id: Kakao's display numbers aren't stable, and Asura's can be
+ * decimals, which this numeric id format can't hold.
+ */
 export function chapterIdentity(adapterId, chapter) {
-  const value = adapterId === 'kakao' ? chapter.productId : chapter.number;
+  const value = adapterId === 'kakao' ? chapter.productId
+    : adapterId === 'asura' ? chapter.chapterId
+    : chapter.number;
   if (!numericId(value)) throw new Error('Chapter is missing its stable ID.');
   return String(value);
 }
@@ -42,7 +65,7 @@ export function chapterSnapshot(adapterId, chapters) {
   }
   const found = new Map();
   for (const chapter of chapters) {
-    if (!Number.isSafeInteger(chapter.number) || chapter.number < 0) throw new Error('Invalid chapter number.');
+    if (!validChapterNumber(adapterId, chapter.number)) throw new Error('Invalid chapter number.');
     const id = chapterIdentity(adapterId, chapter);
     found.set(id, { id, number: chapter.number, title: text(chapter.title) });
   }
@@ -53,7 +76,7 @@ export function safeCover(value) {
   try {
     const url = new URL(value);
     if (!['https:','http:'].includes(url.protocol)) return '';
-    if (!['pstatic.net','webtoons.com','kakao.com','kakaoentcdn.com','webtoon.co.kr']
+    if (!['pstatic.net','webtoons.com','kakao.com','kakaoentcdn.com','webtoon.co.kr','asurascans.com']
       .some(host => url.hostname === host || url.hostname.endsWith(`.${host}`))) return '';
     return url.href;
   } catch { return ''; }
@@ -109,10 +132,11 @@ export function parseFollowBackup(input) {
     if (!Array.isArray(item.known) || !item.known.length || item.known.length > MAX_CHAPTERS) throw new Error('Invalid chapter history.');
     const ids = new Set();
     const known = item.known.map(chapter => {
-      if (!numericId(chapter.id) || ids.has(String(chapter.id)) || !Number.isSafeInteger(chapter.number) || chapter.number < 0) {
+      if (!numericId(chapter.id) || ids.has(String(chapter.id)) || !validChapterNumber(item.adapterId, chapter.number)) {
         throw new Error('Invalid chapter history entry.');
       }
-      if (item.adapterId !== 'kakao' && String(chapter.number) !== String(chapter.id)) throw new Error('Chapter ID mismatch.');
+      // Only sites whose id *is* the chapter number can be cross-checked.
+      if (!['kakao', 'asura'].includes(item.adapterId) && String(chapter.number) !== String(chapter.id)) throw new Error('Chapter ID mismatch.');
       ids.add(String(chapter.id));
       return {id:String(chapter.id),number:chapter.number,title:text(chapter.title)};
     });

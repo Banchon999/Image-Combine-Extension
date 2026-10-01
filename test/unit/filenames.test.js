@@ -111,6 +111,15 @@ test('padChapter aligns lexical and numeric order', () => {
   assert.ok(padChapter(9) < padChapter(10));
 });
 
+test('padChapter keeps a side chapter distinct from its parent chapter', () => {
+  // Truncating 152.5 to "152" would overwrite chapter 152's file.
+  assert.equal(padChapter(152.5), '152.5');
+  assert.equal(padChapter(9.5), '009.5');
+  assert.notEqual(padChapter(152.5), padChapter(152));
+  const sorted = [152.5, 9, 153, 152, 10].map((n) => padChapter(n)).sort();
+  assert.deepEqual(sorted, ['009', '010', '152', '152.5', '153']);
+});
+
 test('imageExtension prefers MIME, falls back to the URL', () => {
   assert.equal(imageExtension('https://x/a', 'image/png'), 'png');
   assert.equal(imageExtension('https://x/a.JPEG?type=q90'), 'jpg');

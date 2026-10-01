@@ -27,11 +27,15 @@
   "backupHint": { "message": "ข้อมูลเก็บในเบราว์เซอร์นี้ โปรดสำรองก่อนลบหรือติดตั้งส่วนขยายใหม่" },
   "seriesEmpty": { "message": "เลือกเรื่องจากหน้าค้นหา หรือวางลิงก์" },
   "queueEmpty": { "message": "ยังไม่มีรายการดาวน์โหลด" },
+  "cancelJob": { "message": "ยกเลิก" },
+  "jobCountLabel": { "message": "ตอน" },
+  "stripCaption": { "message": "หน้า เรียงบนลงล่าง" },
 
   "uiLanguageLabel": { "message": "ภาษาหน้าจอ" },
 
   "searchHintKorean": { "message": "ค้นหาชื่อเรื่อง/ผู้แต่งภาษาเกาหลี จะเปิดแท็บชั่วคราวแล้วปิดหลังอ่านผลแรก Kakao ค้นเฉพาะเว็บตูน การเข้าถึงบัญชีต้องเปิดเองในหน้าตอน" },
   "searchHintWebtoon": { "message": "ค้นหาในภาษา WEBTOON ที่เลือก" },
+  "searchHintAsura": { "message": "ค้นหาใน Asura Scans ด้วยชื่อภาษาอังกฤษหรือชื่อต้นฉบับ ตอนที่ยังอยู่ในช่วงอ่านก่อนแบบเสียเงินจะแสดงในรายการแต่จะไม่ดาวน์โหลด" },
   "searchTypePrompt": { "message": "พิมพ์ชื่อเรื่องที่ต้องการค้นหา" },
   "searching": { "message": "กำลังค้นหา…" },
   "searchNoResults": { "message": "ไม่พบผลลัพธ์สำหรับ “$1” บนเว็บ/ภาษาที่เลือก", "placeholders": { "query": { "content": "$1" } } },
@@ -75,6 +79,7 @@
   "fmtZip": { "message": "ZIP (รวมรูปภาพ)" },
   "fmtRaw": { "message": "รูปภาพแยกไฟล์" },
   "noFreeChapters": { "message": "ไม่มีตอนฟรี ถ้าคุณมีสิทธิ์อยู่แล้ว ให้เปิดตัวเลือกบัญชี Kakao และกรอกหมายเลขตอนที่ต้องการ" },
+  "noFreeChaptersYet": { "message": "ยังไม่มีตอนฟรี ทุกตอนยังอยู่ในช่วงอ่านก่อนแบบเสียเงิน ลองใหม่หลังมีตอนปลดล็อก" },
   "willRequest": { "message": "จะโหลด $1", "placeholders": { "what": { "content": "$1" } } },
   "kakaoAuthNote": { "message": " Kakao ต้องอนุญาต $1 ตอนที่ไม่ฟรี การเปิดตัวเลือกนี้ไม่ได้ปลดล็อกให้", "placeholders": { "count": { "content": "$1" } } },
   "lockedStrong": { "message": "$1 จาก $2 ตอนเป็นตอนฟรี ", "placeholders": { "free": { "content": "$1" }, "total": { "content": "$2" } } },

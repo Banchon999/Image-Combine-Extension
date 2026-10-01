@@ -74,5 +74,28 @@
         "image"
       ]
     }
+  },
+  {
+    "id": 4,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://asurascans.com/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "asurascans.com"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest",
+        "image"
+      ]
+    }
   }
 ]

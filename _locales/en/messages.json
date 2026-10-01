@@ -27,11 +27,15 @@
   "backupHint": { "message": "Stored in this browser. Export a backup before removing or reinstalling the extension." },
   "seriesEmpty": { "message": "Pick a series from Search, or paste a link." },
   "queueEmpty": { "message": "No downloads yet." },
+  "cancelJob": { "message": "Cancel" },
+  "jobCountLabel": { "message": "chapters" },
+  "stripCaption": { "message": "pages, top to bottom" },
 
   "uiLanguageLabel": { "message": "Interface language" },
 
   "searchHintKorean": { "message": "Search Korean titles/authors. Opens a temporary tab and closes it after reading the first results. Kakao searches webtoons only; account access is opt-in on the chapter page." },
   "searchHintWebtoon": { "message": "Search the selected WEBTOON language." },
+  "searchHintAsura": { "message": "Search Asura Scans by English or original title. Chapters still in paid early access are listed but not downloaded." },
   "searchTypePrompt": { "message": "Type a title to search for." },
   "searching": { "message": "Searching…" },
   "searchNoResults": { "message": "Nothing found for “$1” on the selected site/language.", "placeholders": { "query": { "content": "$1" } } },
@@ -75,6 +79,7 @@
   "fmtZip": { "message": "ZIP (images archive)" },
   "fmtRaw": { "message": "Raw images" },
   "noFreeChapters": { "message": "No free chapters. If you already have access, enable the Kakao account option and enter specific chapter numbers." },
+  "noFreeChaptersYet": { "message": "No free chapters yet. Every chapter is still in paid early access; try again after one unlocks." },
   "willRequest": { "message": "Will request $1.", "placeholders": { "what": { "content": "$1" } } },
   "kakaoAuthNote": { "message": " Kakao must authorize $1 non-free chapter(s); enabling this option does not unlock them.", "placeholders": { "count": { "content": "$1" } } },
   "lockedStrong": { "message": "$1 of $2 chapters are free. ", "placeholders": { "free": { "content": "$1" }, "total": { "content": "$2" } } },

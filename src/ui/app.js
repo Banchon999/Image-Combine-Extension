@@ -184,7 +184,7 @@ function renderFollowing() {
       }
       state.current = result;
       showView('series');
-      renderSeries(result,{selection:toRangeSpec(chapters.map(c=>c.number)),followingTitle:updated.title});
+      renderSeries(result,{selection:toRangeSpec(chapters.map(c=>c.number),result.series.chapters.map(c=>c.number)),followingTitle:updated.title});
     });
     action(t('followOpen',undefined,'เปิดเรื่อง'),()=>openSeries({adapterId:entry.adapterId,ref:entry.ref}));
     action(t('followMarkHandled',undefined,'จัดการตอนที่แสดงแล้ว'),async()=>{
@@ -259,17 +259,24 @@ function invalidateSearch() {
 function selectSearchSite() {
   const select = $('search-lang');
   if (!select.disabled && select.value) webtoonLanguage = select.value;
-  const korean = $('search-site').value !== 'webtoons';
+  const site = $('search-site').value;
+  const korean = site === 'naver' || site === 'kakao';
+  const asura = site === 'asura';
+  // Only WEBTOON publishes in several languages; every other site has one.
+  const fixed = korean ? { code: 'ko', label: '한국어 (Korean)' }
+    : asura ? { code: 'en', label: 'English' } : null;
   clear(select);
-  for (const { code, label } of korean ? [{ code: 'ko', label: '한국어 (Korean)' }] : LANGUAGES) {
+  for (const { code, label } of fixed ? [fixed] : LANGUAGES) {
     select.append(el('option', { value: code, text: label }));
   }
-  select.disabled = korean;
-  select.value = korean ? 'ko' : webtoonLanguage;
-  $('search-input').placeholder = korean ? '화산귀환 / 나 혼자만 레벨업' : 'Tower of God';
+  select.disabled = Boolean(fixed);
+  select.value = fixed ? fixed.code : webtoonLanguage;
+  $('search-input').placeholder = korean ? '화산귀환 / 나 혼자만 레벨업' : asura ? 'Nano Machine' : 'Tower of God';
   $('search-hint').textContent = korean
     ? t('searchHintKorean', undefined, 'Search Korean titles/authors. Opens a temporary tab and closes it after reading the first results. Kakao searches webtoons only; account access is opt-in on the chapter page.')
-    : t('searchHintWebtoon', undefined, 'Search the selected WEBTOON language.');
+    : asura
+      ? t('searchHintAsura', undefined, 'Search Asura Scans by English or original title. Chapters still in paid early access are listed but not downloaded.')
+      : t('searchHintWebtoon', undefined, 'Search the selected WEBTOON language.');
   invalidateSearch();
 }
 
@@ -291,7 +298,9 @@ async function runSearch() {
   clear(status).append(el('div', { class: 'notice' }, [el('span', { class: 'spinner' }), ` ${t('searching', undefined, 'Searching…')}`]));
   searching = true;
   $('search-go').disabled = true;
-  if (adapterId !== 'webtoons') {
+  // Only the tab-scraped sites stop at a first batch worth linking out from.
+  const partial = adapterId === 'naver' || adapterId === 'kakao';
+  if (partial) {
     $('search-external').href = buildSiteSearchUrl(adapterId, query);
     $('search-external').hidden = false;
   }
@@ -304,7 +313,7 @@ async function runSearch() {
       notice(status, t('searchNoResults', [query], `Nothing found for "${query}" on the selected site/language.`));
       return;
     }
-    notice(status, adapterId === 'webtoons'
+    notice(status, !partial
       ? t('searchResults', [found.length], `${found.length} results.`)
       : t('searchResultsBatch', [found.length], `${found.length} results (first loaded batch; see the site for more).`));
     for (const item of found) {
@@ -467,14 +476,16 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
 
   const refreshSummary = () => {
     if (downloadable.length === 0 && !(adapterId === 'kakao' && accountAccess.checked)) {
-      summary.textContent = t('noFreeChapters', undefined, 'No free chapters. If you already have access, enable the Kakao account option and enter specific chapter numbers.');
+      summary.textContent = adapterId === 'kakao'
+        ? t('noFreeChapters', undefined, 'No free chapters. If you already have access, enable the Kakao account option and enter specific chapter numbers.')
+        : t('noFreeChaptersYet', undefined, 'No free chapters yet. Every chapter is still in paid early access; try again after one unlocks.');
       start.disabled = true;
       return;
     }
     try {
       if(stitchToggle.checked)stitchOptions({...getStitchSettings(),format:format.value});
       const { chosen, nonFreeCount } = validateChapterSelection(series.chapters, selection.value,
-        adapterId === 'kakao' && accountAccess.checked);
+        adapterId === 'kakao' && accountAccess.checked, adapterId);
       summary.textContent = t('willRequest', [describeSelection(chosen)], `Will request ${describeSelection(chosen)}.`) +
         (nonFreeCount ? t('kakaoAuthNote', [nonFreeCount], ` Kakao must authorize ${nonFreeCount} non-free chapter(s); enabling this option does not unlock them.`) : '');
       start.disabled = false;
@@ -582,31 +593,72 @@ function renderQueue() {
     if (job.status === STATUS.RUNNING) {
       head.append(
         el('button', {
-          text: 'Cancel',
+          text: t('cancelJob', undefined, 'Cancel'),
           onclick: () => send(MSG.CANCEL_JOB, { jobId: job.id }).catch(() => {}),
         }),
       );
     }
     card.append(head);
-
+    if (job.site) card.append(el('div', { class: 'job-site', text: job.site }));
     if (job.error) card.append(el('div', { class: 'notice error', text: job.error }));
 
-    for (const chapter of job.chapters ?? []) {
-      const pct = chapter.total ? Math.round((chapter.done / chapter.total) * 100) : 0;
-      const bar = el('div', { class: 'bar', role: 'progressbar', 'aria-label': `Chapter ${chapter.number}`,
-        'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(chapter.status === STATUS.DONE ? 100 : pct) }, [el('i')]);
-      bar.firstChild.style.width = `${chapter.status === STATUS.DONE ? 100 : pct}%`;
+    const chapters = job.chapters ?? [];
+    // Delivered means a file was written: a partial chapter lost some images
+    // but still produced an archive, so it counts.
+    const delivered = chapters.filter(
+      c => c.status === STATUS.DONE || c.status === STATUS.PARTIAL,
+    ).length;
 
-      card.append(
-        el('div', { class: 'chapter' }, [
-          el('span', { class: 'num', text: `#${chapter.number}` }),
-          chapter.note
-            ? el('span', { class: 'note', text: chapter.note })
-            : bar,
-          el('span', { class: `pill ${chapter.status}`, text: chapter.status.replace('skipped-protected', 'protected') }),
+    const rack = el('div', { class: 'strip-rack' });
+    for (const chapter of chapters) {
+      const pct = chapter.status === STATUS.DONE
+        ? 100
+        : chapter.total ? Math.round((chapter.done / chapter.total) * 100) : 0;
+      // Rule the trough only once the page count is known. A queued chapter
+      // hasn't been fetched yet, so drawing rules there would show a page count
+      // we invented — and made unstarted chapters look busier than running ones.
+      const ruled = chapter.total > 0;
+      // One hairline per page while that stays legible in a 74px trough;
+      // past that the rules become a uniform grain that still reads as "many".
+      const tick = ruled && chapter.total <= 20 ? 100 / chapter.total : 5;
+      const trough = {
+        class: ruled ? 'strip-trough ruled' : 'strip-trough',
+        role: 'progressbar',
+        'aria-label': `Chapter ${chapter.number}`,
+        'aria-valuemin': '0',
+        'aria-valuemax': '100',
+        'aria-valuenow': String(pct),
+      };
+      if (ruled) trough.style = `--tick:${tick}%`;
+
+      rack.append(
+        el('div', { class: `strip ${chapter.status}` }, [
+          el('div', trough, [el('div', { class: 'strip-fill', style: `height:${pct}%` })]),
+          el('div', { class: 'strip-no', text: String(chapter.number) }),
         ]),
       );
     }
+
+    card.append(
+      el('div', { class: 'job-body' }, [
+        el('div', { class: 'job-count' }, [
+          el('b', {}, [String(delivered), el('i', { text: `/${chapters.length}` })]),
+          el('span', { text: t('jobCountLabel', undefined, 'chapters') }),
+        ]),
+        el('div', { style: 'min-width:0;flex:1' }, [
+          rack,
+          el('span', { class: 'strip-cap', text: t('stripCaption', undefined, 'pages, top to bottom') }),
+        ]),
+      ]),
+    );
+
+    // Anything a chapter has to say rather than show: a failure reason, a
+    // count of lost images, the stitched-image tally.
+    for (const chapter of chapters) {
+      if (!chapter.note) continue;
+      card.append(el('div', { class: 'job-note', text: `${chapter.number} · ${chapter.note}` }));
+    }
+
     body.append(card);
   }
 }

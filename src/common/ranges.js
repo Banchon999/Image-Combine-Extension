@@ -6,6 +6,7 @@
  *   latest           the newest chapter only
  *   latest:5         the newest 5 chapters
  *   12               a single chapter
+ *   152.5            a side chapter (some sites number these with decimals)
  *   1-25             an inclusive range
  *   30-              from 30 to the end
  *   -10              from the start to 10
@@ -14,10 +15,12 @@
 
 import { RangeError_ } from './errors.js';
 
-const SINGLE = /^\d+$/;
-const CLOSED = /^(\d+)\s*-\s*(\d+)$/;
-const OPEN_END = /^(\d+)\s*-$/;
-const OPEN_START = /^-\s*(\d+)$/;
+// A chapter number: an integer, or a decimal side chapter such as 152.5.
+const NUM = '\\d+(?:\\.\\d+)?';
+const SINGLE = new RegExp(`^${NUM}$`);
+const CLOSED = new RegExp(`^(${NUM})\\s*-\\s*(${NUM})$`);
+const OPEN_END = new RegExp(`^(${NUM})\\s*-$`);
+const OPEN_START = new RegExp(`^-\\s*(${NUM})$`);
 const LATEST_N = /^latest\s*:\s*(\d+)$/i;
 
 /**
@@ -107,28 +110,47 @@ export function describeSelection(numbers) {
  *
  * Used to pre-fill the selection box when only part of a series is
  * downloadable, so the user sees "1-3" rather than a wall of commas.
+ *
+ * Pass `available` (every chapter the series has) whenever the result will be
+ * fed back into parseRange. A run is then only collapsed across chapters that
+ * are adjacent in the series itself: with a locked 2.5 between them, [1, 2, 3]
+ * must stay "1,2,3", because "1-3" would select 2.5 as well. Without
+ * `available`, consecutive integers are treated as adjacent.
+ *
+ * @param {number[]} numbers
+ * @param {number[]} [available]
  */
-export function toRangeSpec(numbers) {
+export function toRangeSpec(numbers, available) {
   const sorted = [...new Set(numbers)].sort((a, b) => a - b);
   if (sorted.length === 0) return '';
+
+  const order = Array.isArray(available)
+    ? new Map([...new Set(available)].sort((a, b) => a - b).map((n, i) => [n, i]))
+    : null;
+  const adjacent = (a, b) => (order
+    ? order.has(a) && order.get(b) === order.get(a) + 1
+    : Number.isInteger(a) && b === a + 1);
 
   const parts = [];
   let start = sorted[0];
   let previous = sorted[0];
+  let length = 1;
 
   const flush = () => {
-    if (start === previous) parts.push(String(start));
-    else if (previous === start + 1) parts.push(`${start},${previous}`);
+    if (length === 1) parts.push(String(start));
+    else if (length === 2) parts.push(`${start},${previous}`);
     else parts.push(`${start}-${previous}`);
   };
 
   for (const n of sorted.slice(1)) {
-    if (n === previous + 1) {
+    if (adjacent(previous, n)) {
       previous = n;
+      length += 1;
       continue;
     }
     flush();
     start = previous = n;
+    length = 1;
   }
   flush();
   return parts.join(',');
