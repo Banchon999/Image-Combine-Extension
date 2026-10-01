@@ -5,7 +5,7 @@ const MAX_CHAPTERS = 20000;
 const text = (value, max = 500) => String(value ?? '').slice(0, max);
 const numericId = value => /^\d{1,40}$/.test(String(value ?? ''));
 const ASURA_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-// NYX and EZ Manga slugs keep title punctuation (' : ! .), so only reject
+// NYX, EZ Manga and Lua Comic slugs keep title punctuation (' : ! .), so only reject
 // what could break a path or a URL.
 const lenientSlug = (slug) => slug.length > 0 && slug.length <= 300 && slug !== '.' && slug !== '..'
   && !/[/\\?#\s]/.test(slug) && !/\p{Cc}/u.test(slug);
@@ -18,6 +18,7 @@ const SLUG_SITES = {
   asura: (slug) => slug.length <= 200 && ASURA_SLUG.test(slug),
   nyx: lenientSlug,
   ezmanga: lenientSlug,
+  lua: lenientSlug,
 };
 
 /**
@@ -91,7 +92,7 @@ export function safeCover(value) {
     const url = new URL(value);
     if (!['https:','http:'].includes(url.protocol)) return '';
     if (!['pstatic.net','webtoons.com','kakao.com','kakaoentcdn.com','webtoon.co.kr','asurascans.com',
-      'nyxscans.com','ezmanga.org']
+      'nyxscans.com','ezmanga.org','luacomic.org']
       .some(host => url.hostname === host || url.hostname.endsWith(`.${host}`))) return '';
     return url.href;
   } catch { return ''; }
