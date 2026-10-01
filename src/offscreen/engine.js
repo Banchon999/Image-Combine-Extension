@@ -341,7 +341,7 @@ export function createEngine(/** @type {EngineIO} */ io) {
         if (entries.length) {
           const relative = seriesArchivePath({
             seriesTitle: series.title,
-            rangeLabel: toRangeSpec(ready.map((part) => part.number)),
+            rangeLabel: toRangeSpec(ready.map((part) => part.number), series.chapters.map((c) => c.number)),
             format: settings.format,
           });
           await io.saveBlob(

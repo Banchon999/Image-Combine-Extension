@@ -164,3 +164,18 @@ test('engine default never requests a paid viewer or saves an archive', async ()
   const job=await engine.runJob({jobId:'default-test',adapterId:'kakao',ref,selection:'146',settings:{throttleMs:0}});
   assert.equal(job.chapters[0].status,STATUS.SKIPPED_PROTECTED);
 });
+
+test('pre-filled selection skips a locked side chapter between free ones', () => {
+  const chapters = [{number:1},{number:2},{number:2.5,isFree:false},{number:3}];
+  const spec = initialSelection(chapters,{},'asura');
+  assert.equal(spec,'1,2,3');
+  assert.deepEqual(validateChapterSelection(chapters,spec,false,'asura'),{chosen:[1,2,3],nonFreeCount:0});
+});
+
+test('non-Kakao refusal names the locked chapters, not a Kakao option', () => {
+  const chapters = [{number:9},{number:10,isFree:false}];
+  assert.throws(()=>validateChapterSelection(chapters,'all',false,'asura'),
+    error=>/not free yet \(10\)/.test(error.message) && !/Kakao/.test(error.message));
+  // Kakao keeps its own wording.
+  assert.throws(()=>validateChapterSelection(chapters,'all',false),/Kakao access/);
+});

@@ -86,11 +86,18 @@ export function safeDownloadPath(input) {
   return parts.map((p, i) => i === parts.length - 1 ? sanitizeFilename(p) : sanitizeSegment(p)).join('/');
 }
 
-/** Left-pad a chapter number so lexical sort matches numeric sort. */
+/**
+ * Left-pad a chapter number so lexical sort matches numeric sort.
+ *
+ * A decimal side chapter keeps its fraction ("152.5" -> "152.5", "9.5" ->
+ * "009.5"): truncating it would name it after chapter 152 and overwrite that
+ * chapter's file. "152" < "152.5" < "153" still sorts correctly as text.
+ */
 export function padChapter(number, width = 3) {
   const n = Number(number);
   if (!Number.isFinite(n)) return sanitizeSegment(number, '000');
-  const body = String(Math.trunc(Math.abs(n))).padStart(width, '0');
+  const [whole, fraction] = String(Math.abs(n)).split('.');
+  const body = whole.padStart(width, '0') + (fraction ? `.${fraction}` : '');
   return n < 0 ? `-${body}` : body;
 }
 

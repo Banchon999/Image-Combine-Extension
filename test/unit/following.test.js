@@ -238,3 +238,34 @@ test('simultaneous checks of one series share a fetch instead of racing stale sn
   assert.deepEqual(first,second);
   assert.deepEqual(ids(first.entry),['101']);
 });
+
+// Asura: slug series ids, decimal side chapters, and the API's numeric chapter id.
+const asuraData = (rows) => ({adapterId:'asura', ref:{seriesId:'return-of-the-mount-hua-sect',lang:'en',episodeNo:152.5},
+  series:{title:'Return of the Mount Hua Sect',author:'Biga',cover:'https://cdn.asurascans.com/asura-images/covers/x.webp',
+    chapters:rows.map(([number,chapterId])=>({number,chapterId,title:`Chapter ${number}`}))}});
+
+test('Asura series can be followed, keyed by slug and the API chapter id',()=>{
+  const entry=createFollowEntry(asuraData([[152,90152],[152.5,90153],[153,90154]]),1,'a');
+  assert.equal(entry.id,'asura:en::return-of-the-mount-hua-sect');
+  assert.deepEqual(entry.ref,{seriesId:'return-of-the-mount-hua-sect',lang:'en'});
+  assert.deepEqual(entry.known.map(c=>[c.id,c.number]),[['90152',152],['90153',152.5],['90154',153]]);
+  assert.equal(entry.cover,'https://cdn.asurascans.com/asura-images/covers/x.webp');
+  const updated=updateFollowEntry(entry,asuraData([[152,90152],[152.5,90153],[153,90154],[153.1,90155]]).series,2);
+  assert.deepEqual(ids(updated),['90155']);
+});
+
+test('Asura refs must be plain slugs, and decimals stay Asura-only',()=>{
+  for (const seriesId of ['../etc','Nano Machine','nano-machine/','', 'a'.repeat(201)]) {
+    assert.throws(()=>cleanRef('asura',{seriesId}),/Invalid followed series/);
+  }
+  assert.throws(()=>chapterSnapshot('asura',[{number:1}]),/stable ID/);
+  assert.throws(()=>chapterSnapshot('naver',[{number:1.5}]),/Invalid chapter number/);
+});
+
+test('Asura backup round-trips decimal chapters whose id differs from the number',()=>{
+  const good=createFollowEntry(asuraData([[152,90152],[152.5,90153]]),1,'x');
+  const [parsed]=parseFollowBackup({version:1,items:[good]});
+  assert.deepEqual(parsed.known.map(c=>[c.id,c.number]),[['90152',152],['90153',152.5]]);
+  const naver=createFollowEntry(data(),1,'y');
+  assert.throws(()=>parseFollowBackup({version:1,items:[{...naver,known:[{id:'99',number:99.5}]}]}),/Invalid chapter history/);
+});

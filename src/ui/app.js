@@ -184,7 +184,7 @@ function renderFollowing() {
       }
       state.current = result;
       showView('series');
-      renderSeries(result,{selection:toRangeSpec(chapters.map(c=>c.number)),followingTitle:updated.title});
+      renderSeries(result,{selection:toRangeSpec(chapters.map(c=>c.number),result.series.chapters.map(c=>c.number)),followingTitle:updated.title});
     });
     action(t('followOpen',undefined,'เปิดเรื่อง'),()=>openSeries({adapterId:entry.adapterId,ref:entry.ref}));
     action(t('followMarkHandled',undefined,'จัดการตอนที่แสดงแล้ว'),async()=>{
@@ -259,17 +259,24 @@ function invalidateSearch() {
 function selectSearchSite() {
   const select = $('search-lang');
   if (!select.disabled && select.value) webtoonLanguage = select.value;
-  const korean = $('search-site').value !== 'webtoons';
+  const site = $('search-site').value;
+  const korean = site === 'naver' || site === 'kakao';
+  const asura = site === 'asura';
+  // Only WEBTOON publishes in several languages; every other site has one.
+  const fixed = korean ? { code: 'ko', label: '한국어 (Korean)' }
+    : asura ? { code: 'en', label: 'English' } : null;
   clear(select);
-  for (const { code, label } of korean ? [{ code: 'ko', label: '한국어 (Korean)' }] : LANGUAGES) {
+  for (const { code, label } of fixed ? [fixed] : LANGUAGES) {
     select.append(el('option', { value: code, text: label }));
   }
-  select.disabled = korean;
-  select.value = korean ? 'ko' : webtoonLanguage;
-  $('search-input').placeholder = korean ? '화산귀환 / 나 혼자만 레벨업' : 'Tower of God';
+  select.disabled = Boolean(fixed);
+  select.value = fixed ? fixed.code : webtoonLanguage;
+  $('search-input').placeholder = korean ? '화산귀환 / 나 혼자만 레벨업' : asura ? 'Nano Machine' : 'Tower of God';
   $('search-hint').textContent = korean
     ? t('searchHintKorean', undefined, 'Search Korean titles/authors. Opens a temporary tab and closes it after reading the first results. Kakao searches webtoons only; account access is opt-in on the chapter page.')
-    : t('searchHintWebtoon', undefined, 'Search the selected WEBTOON language.');
+    : asura
+      ? t('searchHintAsura', undefined, 'Search Asura Scans by English or original title. Chapters still in paid early access are listed but not downloaded.')
+      : t('searchHintWebtoon', undefined, 'Search the selected WEBTOON language.');
   invalidateSearch();
 }
 
@@ -291,7 +298,9 @@ async function runSearch() {
   clear(status).append(el('div', { class: 'notice' }, [el('span', { class: 'spinner' }), ` ${t('searching', undefined, 'Searching…')}`]));
   searching = true;
   $('search-go').disabled = true;
-  if (adapterId !== 'webtoons') {
+  // Only the tab-scraped sites stop at a first batch worth linking out from.
+  const partial = adapterId === 'naver' || adapterId === 'kakao';
+  if (partial) {
     $('search-external').href = buildSiteSearchUrl(adapterId, query);
     $('search-external').hidden = false;
   }
@@ -304,7 +313,7 @@ async function runSearch() {
       notice(status, t('searchNoResults', [query], `Nothing found for "${query}" on the selected site/language.`));
       return;
     }
-    notice(status, adapterId === 'webtoons'
+    notice(status, !partial
       ? t('searchResults', [found.length], `${found.length} results.`)
       : t('searchResultsBatch', [found.length], `${found.length} results (first loaded batch; see the site for more).`));
     for (const item of found) {
@@ -467,14 +476,16 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
 
   const refreshSummary = () => {
     if (downloadable.length === 0 && !(adapterId === 'kakao' && accountAccess.checked)) {
-      summary.textContent = t('noFreeChapters', undefined, 'No free chapters. If you already have access, enable the Kakao account option and enter specific chapter numbers.');
+      summary.textContent = adapterId === 'kakao'
+        ? t('noFreeChapters', undefined, 'No free chapters. If you already have access, enable the Kakao account option and enter specific chapter numbers.')
+        : t('noFreeChaptersYet', undefined, 'No free chapters yet. Every chapter is still in paid early access; try again after one unlocks.');
       start.disabled = true;
       return;
     }
     try {
       if(stitchToggle.checked)stitchOptions({...getStitchSettings(),format:format.value});
       const { chosen, nonFreeCount } = validateChapterSelection(series.chapters, selection.value,
-        adapterId === 'kakao' && accountAccess.checked);
+        adapterId === 'kakao' && accountAccess.checked, adapterId);
       summary.textContent = t('willRequest', [describeSelection(chosen)], `Will request ${describeSelection(chosen)}.`) +
         (nonFreeCount ? t('kakaoAuthNote', [nonFreeCount], ` Kakao must authorize ${nonFreeCount} non-free chapter(s); enabling this option does not unlock them.`) : '');
       start.disabled = false;
