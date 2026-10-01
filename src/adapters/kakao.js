@@ -109,6 +109,8 @@ export function parseChapterPage(result) {
       // The authoritative signal. Anything not explicitly true is treated as locked.
       isFree: item.is_free === true,
       pageCount: item.page_count,
+      // SD03 on every image episode seen; the video prologues are SD01.
+      slideType: String(item.slide_type ?? ''),
     });
   }
   return chapters;
@@ -238,10 +240,21 @@ export const kakaoAdapter = {
     // Preserve the server's decision without mislabelling every failure as DRM.
     const viewerData = json?.viewer_data ?? json?.result?.viewer_data;
     if (!viewerData) {
+      // Pass on what Kakao actually said (e.g. result_code -500) instead of
+      // guessing, and recognise episodes that are not image comics at all:
+      // video prologues are listed as SD01 and the viewer has no pages for them.
+      const code = json?.result_code ?? json?.result?.result_code;
+      const said = json?.message ?? json?.result?.message;
+      const answer = code !== undefined || said
+        ? ` Kakao answered${code !== undefined ? ` code ${code}` : ''}${said ? `: "${said}"` : ''}.`
+        : '';
+      const notComic = chapter?.slideType && chapter.slideType !== 'SD03';
       throw new FetchError(
-        `Kakao returned no viewer data for episode ${chapter.productId ?? chapter.number}. ` +
-        'Open this episode on page.kakao.com to check access, then retry. ' +
-        'If it still fails, share the episode URL and this error.',
+        `Kakao returned no viewer data for episode ${chapter.productId ?? chapter.number}.${answer} ` +
+        (notComic
+          ? `Kakao lists this episode as type ${chapter.slideType}, not an image comic (SD03); video prologues are listed this way and have no pages to download. Skip it and select the comic episodes.`
+          : 'Open this episode on page.kakao.com to check access, then retry. ' +
+            'If it still fails, share the episode URL and this error.'),
       );
     }
 
