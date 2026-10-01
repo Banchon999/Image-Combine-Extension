@@ -262,21 +262,25 @@ function selectSearchSite() {
   const site = $('search-site').value;
   const korean = site === 'naver' || site === 'kakao';
   const asura = site === 'asura';
+  // English scanlation sites with paid chapters, searched through their API.
+  const scans = site === 'nyx' || site === 'ezmanga';
   // Only WEBTOON publishes in several languages; every other site has one.
   const fixed = korean ? { code: 'ko', label: '한국어 (Korean)' }
-    : asura ? { code: 'en', label: 'English' } : null;
+    : asura || scans ? { code: 'en', label: 'English' } : null;
   clear(select);
   for (const { code, label } of fixed ? [fixed] : LANGUAGES) {
     select.append(el('option', { value: code, text: label }));
   }
   select.disabled = Boolean(fixed);
   select.value = fixed ? fixed.code : webtoonLanguage;
-  $('search-input').placeholder = korean ? '화산귀환 / 나 혼자만 레벨업' : asura ? 'Nano Machine' : 'Tower of God';
+  $('search-input').placeholder = korean ? '화산귀환 / 나 혼자만 레벨업' : asura ? 'Nano Machine' : scans ? 'Duke' : 'Tower of God';
   $('search-hint').textContent = korean
     ? t('searchHintKorean', undefined, 'Search Korean titles/authors. Opens a temporary tab and closes it after reading the first results. Kakao searches webtoons only; account access is opt-in on the chapter page.')
     : asura
       ? t('searchHintAsura', undefined, 'Search Asura Scans by English or original title. Chapters still in paid early access are listed but not downloaded.')
-      : t('searchHintWebtoon', undefined, 'Search the selected WEBTOON language.');
+      : scans
+        ? t('searchHintScans', undefined, 'Search by title. Chapters that cost coins or unlock through an ad are listed but not downloaded. Novels are left out.')
+        : t('searchHintWebtoon', undefined, 'Search the selected WEBTOON language.');
   invalidateSearch();
 }
 

@@ -5,21 +5,35 @@ const MAX_CHAPTERS = 20000;
 const text = (value, max = 500) => String(value ?? '').slice(0, max);
 const numericId = value => /^\d{1,40}$/.test(String(value ?? ''));
 const ASURA_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+// NYX and EZ Manga slugs keep title punctuation (' : ! .), so only reject
+// what could break a path or a URL.
+const lenientSlug = (slug) => slug.length > 0 && slug.length <= 300 && slug !== '.' && slug !== '..'
+  && !/[/\\?#\s]/.test(slug) && !/\p{Cc}/u.test(slug);
 
 /**
- * Asura numbers side chapters with decimals (152.5); every other site uses
- * whole numbers, and keeps that stricter check -- including on import.
+ * Sites identified by a slug rather than a number. Their chapters are keyed by
+ * the site's own numeric chapter id, and may be numbered with decimals.
+ */
+const SLUG_SITES = {
+  asura: (slug) => slug.length <= 200 && ASURA_SLUG.test(slug),
+  nyx: lenientSlug,
+  ezmanga: lenientSlug,
+};
+
+/**
+ * Slug sites number side chapters with decimals (152.5); the others use
+ * whole numbers, and keep that stricter check -- including on import.
  */
 function validChapterNumber(adapterId, number) {
-  if (adapterId === 'asura') return Number.isFinite(number) && number >= 0 && number < 1e9;
+  if (adapterId in SLUG_SITES) return Number.isFinite(number) && number >= 0 && number < 1e9;
   return Number.isSafeInteger(number) && number >= 0;
 }
 
 export function cleanRef(adapterId, source) {
-  if (adapterId === 'asura') {
-    // Asura's stable id is the bare slug ("nano-machine"), not a number.
+  if (Object.hasOwn(SLUG_SITES, adapterId)) {
+    // These sites' stable id is the series slug ("nano-machine"), not a number.
     const slug = String(source?.seriesId ?? '');
-    if (slug.length > 200 || !ASURA_SLUG.test(slug)) throw new Error('Invalid followed series reference.');
+    if (!SLUG_SITES[adapterId](slug)) throw new Error('Invalid followed series reference.');
     return { seriesId: slug, lang: 'en' };
   }
   if (!['webtoons', 'naver', 'kakao'].includes(adapterId) || !numericId(source?.seriesId)) {
@@ -47,13 +61,13 @@ export function followId(adapterId, source) {
 }
 
 /**
- * The id a followed chapter is remembered by. Kakao and Asura use the site's
- * own chapter id: Kakao's display numbers aren't stable, and Asura's can be
- * decimals, which this numeric id format can't hold.
+ * The id a followed chapter is remembered by. Kakao and the slug sites use the
+ * site's own chapter id: Kakao's display numbers aren't stable, and the slug
+ * sites' can be decimals, which this numeric id format can't hold.
  */
 export function chapterIdentity(adapterId, chapter) {
   const value = adapterId === 'kakao' ? chapter.productId
-    : adapterId === 'asura' ? chapter.chapterId
+    : Object.hasOwn(SLUG_SITES, adapterId) ? chapter.chapterId
     : chapter.number;
   if (!numericId(value)) throw new Error('Chapter is missing its stable ID.');
   return String(value);
@@ -76,7 +90,8 @@ export function safeCover(value) {
   try {
     const url = new URL(value);
     if (!['https:','http:'].includes(url.protocol)) return '';
-    if (!['pstatic.net','webtoons.com','kakao.com','kakaoentcdn.com','webtoon.co.kr','asurascans.com']
+    if (!['pstatic.net','webtoons.com','kakao.com','kakaoentcdn.com','webtoon.co.kr','asurascans.com',
+      'nyxscans.com','ezmanga.org']
       .some(host => url.hostname === host || url.hostname.endsWith(`.${host}`))) return '';
     return url.href;
   } catch { return ''; }
@@ -136,7 +151,7 @@ export function parseFollowBackup(input) {
         throw new Error('Invalid chapter history entry.');
       }
       // Only sites whose id *is* the chapter number can be cross-checked.
-      if (!['kakao', 'asura'].includes(item.adapterId) && String(chapter.number) !== String(chapter.id)) throw new Error('Chapter ID mismatch.');
+      if (item.adapterId !== 'kakao' && !Object.hasOwn(SLUG_SITES, item.adapterId) && String(chapter.number) !== String(chapter.id)) throw new Error('Chapter ID mismatch.');
       ids.add(String(chapter.id));
       return {id:String(chapter.id),number:chapter.number,title:text(chapter.title)};
     });

@@ -36,6 +36,7 @@
   "searchHintKorean": { "message": "Search Korean titles/authors. Opens a temporary tab and closes it after reading the first results. Kakao searches webtoons only; account access is opt-in on the chapter page." },
   "searchHintWebtoon": { "message": "Search the selected WEBTOON language." },
   "searchHintAsura": { "message": "Search Asura Scans by English or original title. Chapters still in paid early access are listed but not downloaded." },
+  "searchHintScans": { "message": "Search by title. Chapters that cost coins or unlock through an ad are listed but not downloaded. Novels are left out." },
   "searchTypePrompt": { "message": "Type a title to search for." },
   "searching": { "message": "Searching…" },
   "searchNoResults": { "message": "Nothing found for “$1” on the selected site/language.", "placeholders": { "query": { "content": "$1" } } },
