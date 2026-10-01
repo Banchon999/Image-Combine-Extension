@@ -262,3 +262,28 @@ test('Kakao accepts viewer_data inside a result envelope for free chapters', asy
   });
   assert.equal(images.length,1);
 });
+
+test('a Kakao video episode reports what Kakao said and why it has no pages', async () => {
+  // Live viewer answer for Solo Leveling's video prologue (product 51085177), listed as SD01.
+  const ctx = { fetchJson: async () => ({ result_code: -500, message: '알 수 없는 문제가 발생했습니다.', message_key: 'api_common_fail' }) };
+  await assert.rejects(
+    () => kakaoAdapter.getChapterImages({ seriesId: '50866481' }, { number: 1, productId: '51085177', isFree: true, slideType: 'SD01' }, ctx),
+    (error) => /code -500: "알 수 없는 문제가 발생했습니다\."/.test(error.message)
+      && /type SD01, not an image comic/.test(error.message)
+      && !/check access/.test(error.message),
+  );
+  // An image episode with the same server answer keeps the access guidance.
+  await assert.rejects(
+    () => kakaoAdapter.getChapterImages({ seriesId: '1' }, { number: 3, productId: '9', isFree: true, slideType: 'SD03' }, ctx),
+    (error) => /code -500/.test(error.message) && /check access/.test(error.message),
+  );
+});
+
+test('parseChapterPage keeps the episode slide type', () => {
+  const [video, comic] = parseChapterPage({ list: [
+    { cursor_index: 1, item: { product_id: '51085177', title: '동영상 프롤로그', is_free: true, slide_type: 'SD01' } },
+    { cursor_index: 3, item: { product_id: '50896822', title: '프롤로그', is_free: true, slide_type: 'SD03' } },
+  ] });
+  assert.equal(video.slideType, 'SD01');
+  assert.equal(comic.slideType, 'SD03');
+});

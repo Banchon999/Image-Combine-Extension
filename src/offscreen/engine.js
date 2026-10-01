@@ -126,6 +126,9 @@ export function createEngine(/** @type {EngineIO} */ io) {
     };
     const prefixed = (relative) =>
       settings.downloadFolder ? `${settings.downloadFolder}/${relative}` : relative;
+    // "001 - Title - stitched", or "001 - stitched" for an untitled chapter
+    // (joining an empty title produced "001 - - stitched").
+    const stitchedTitle = common.chapterTitle ? `${common.chapterTitle} - stitched` : 'stitched';
 
     const saveRawPages = async (items = pages, stitched = false) => {
       const ids = [];
@@ -133,7 +136,7 @@ export function createEngine(/** @type {EngineIO} */ io) {
         if (signal?.aborted) throw new CancelledError();
         const relative = imagePath({
           ...common,
-          ...(stitched ? {chapterTitle:`${common.chapterTitle ?? ''} - stitched`} : {}),
+          ...(stitched ? {chapterTitle:stitchedTitle} : {}),
           index: page.index,
           url: page.url,
           mimeType: page.mimeType,
@@ -168,7 +171,7 @@ export function createEngine(/** @type {EngineIO} */ io) {
         const blob=settings.format==='pdf'
           ? buildPdf(converted,{title:`${series.title} - ${chapter.title ?? chapter.number}`,author:series.author})
           : buildCbz(converted.map(page=>({name:`${padChapter(page.index,3)}.${imageExtension('',page.mimeType)}`,data:page.data})));
-        await io.saveBlob(blob,prefixed(archivePath({...common,chapterTitle:`${common.chapterTitle ?? ''} - stitched`,format:settings.format})));
+        await io.saveBlob(blob,prefixed(archivePath({...common,chapterTitle:stitchedTitle,format:settings.format})));
         if (stagedIds.length) await io.removeFiles(stagedIds);
       }
       return {format:settings.format,pages:count,stitched:true};
