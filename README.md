@@ -1,5 +1,14 @@
 # Webtoon Downloader
 
+## v1.6.0 — Violet Scans
+
+- Paste a `violetmanga.com` series or chapter link (old `violetscans.org` / `violetscans.com` links work too), or pick **Violet Scans** in **Search site**.
+- The site is WordPress (MangaReader theme), so the series page, chapter pages and search results are read as pages; there is no separate API.
+- **Paid chapters are never downloaded.** Violet sells chapters for coins. In the chapter list a paid chapter has no link, only its price, so it is listed but left out of the pre-filled selection and refused before any request if chosen; the reason names the price. The site also serves a paid chapter's page without its images ("This chapter is locked"); that answer is treated as protected, never worked around.
+- Pages keep the site's own reader order. Some chapters list `0002` … `0009` and then `0001`; `0001` is really the last page (closing panel and recruiting notice), so files are not re-sorted by name.
+- Text novels (also under `/comics/`) are left out of search and refused with a clear message.
+- New permission: `*://*.violetmanga.com/*`. Reload the unpacked extension and accept it.
+
 ## v1.5.0 — One ZIP for many chapters, faster WEBTOON lists, clearer ranges
 
 - **One ZIP for the whole selection.** Tick *Put every selected chapter in one ZIP file*. Inside, each chapter follows **Save as**: one PDF per chapter, one CBZ per chapter, or one folder of images per chapter (ZIP / Raw images), always in chapter order. It now works with every format and together with vertical stitching (stitched parts go inside).
@@ -266,6 +275,7 @@ Requests ride on your browser's own session, so age-gated series work without th
 | **nyxscans.com** | English search, chapter listing, downloads; chapters sold for coins or unlocked through ads are skipped; novels excluded |
 | **ezmanga.org** (and ezmanhwa.com) | English search, chapter listing, downloads; paid chapters are skipped; novels excluded |
 | **luacomic.org** | Series and chapter links (no search), chapter listing, downloads; paid chapters are skipped |
+| **violetmanga.com** (Violet Scans; old violetscans.org links too) | English search, chapter listing, downloads; paid chapters are skipped; novels excluded |
 
 ### Kakao Page: free by default, existing account access optional
 

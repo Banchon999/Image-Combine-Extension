@@ -166,5 +166,28 @@
         "image"
       ]
     }
+  },
+  {
+    "id": 8,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://violetmanga.com/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "violetmanga.com"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest",
+        "image"
+      ]
+    }
   }
 ]

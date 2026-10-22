@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_extName__",
   "short_name": "Webtoon DL",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
   "minimum_chrome_version": "116",
@@ -41,6 +41,7 @@
     "*://*.ezmanga.org/*",
     "*://*.ezmanhwa.com/*",
     "*://*.luacomic.org/*",
+    "*://*.violetmanga.com/*",
     "https://comic.naver.com/*",
     "https://m.comic.naver.com/*"
   ],
