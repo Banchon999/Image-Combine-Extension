@@ -35,6 +35,8 @@ export const MSG = /** @type {const} */ ({
   // offscreen/worker -> panel (broadcast)
   PROGRESS: 'progress',
   JOB_UPDATED: 'job-updated',
+  // Chrome saved one of our files under another name (see download-manager.js).
+  DOWNLOAD_RENAMED: 'download-renamed',
   LOG: 'log',
 });
 

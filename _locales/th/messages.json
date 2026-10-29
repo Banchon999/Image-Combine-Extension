@@ -106,6 +106,9 @@
   "bundleInsideStitched": { "message": "รูปจะถูกต่อแนวตั้งก่อนใส่" },
   "bundleSizeHint": { "message": "ถ้าเลือกหลายตอนจนไฟล์ใหญ่มาก อาจสร้างไม่สำเร็จ" },
   "bundleOffHint": { "message": "ปิดอยู่: แต่ละตอนบันทึกเป็นไฟล์แยก" },
+  "dismissNotice": {"message": "ปิด"},
+  "downloadRenamed": {"message": "Chrome บันทึกไฟล์ $1 ไฟล์ด้วยชื่ออื่น เช่น “$2” แทน “$3” ", "placeholders": {"count": {"content": "$1"}, "actual": {"content": "$2"}, "requested": {"content": "$3"}}},
+  "downloadRenamedHelp": {"message": "เพราะมีส่วนขยายอื่นที่ตั้งชื่อไฟล์ดาวน์โหลดแทน (เช่นตัวจัดการดาวน์โหลด) ข้างในไฟล์ครบปกติ เปลี่ยนชื่อไฟล์เองได้ หรือปิดส่วนขยายนั้น หรือถอดแล้วติดตั้ง Webtoon Downloader ใหม่ให้เป็นตัวที่ติดตั้งล่าสุด "},
 
   "stitchModeSmart": { "message": "Smart — คำนวณความสูงให้" },
   "stitchModeHeight": { "message": "กำหนดความสูงสูงสุดต่อภาพ" },

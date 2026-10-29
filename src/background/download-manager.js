@@ -10,6 +10,88 @@ import { safeDownloadPath } from '../common/filenames.js';
 
 const log = createLogger('downloads');
 const COMPLETION_TIMEOUT_MS = 120_000;
+// How long a requested name is kept for the naming step below. Chrome asks
+// within moments of the download starting; this only bounds the memory.
+const NAME_TTL_MS = 60_000;
+
+/**
+ * The name each of our downloads should get, keyed by its blob URL.
+ *
+ * Once ANY installed extension listens to chrome.downloads.onDeterminingFilename
+ * (download managers and organisers commonly do), Chrome drops the `filename`
+ * passed to chrome.downloads.download and names a blob download after its
+ * URL's UUID, with no extension, in the top of Downloads ("0cc281d0-3d10-...").
+ * Answering that same event with the name we asked for restores it.
+ */
+const requestedNames = new Map();
+
+function rememberName(blobUrl, filename, conflictAction) {
+  requestedNames.set(blobUrl, { filename, conflictAction });
+  const timer = setTimeout(() => {
+    if (requestedNames.get(blobUrl)?.filename === filename) requestedNames.delete(blobUrl);
+  }, NAME_TTL_MS);
+  timer?.unref?.(); // Node (tests) only: a pending cleanup must not hold the process open.
+}
+
+/**
+ * Register the naming listener. Call once, synchronously, at the top level of
+ * the service worker, so it is in place before any download starts.
+ *
+ * Every other download in the browser gets an empty suggestion, which leaves
+ * its name exactly as Chrome or other extensions decide.
+ */
+export function installFilenameGuard() {
+  const event = chrome.downloads?.onDeterminingFilename;
+  if (!event) return;
+  event.addListener((item, suggest) => {
+    const wanted = item.byExtensionId === chrome.runtime.id
+      ? requestedNames.get(item.url) ?? requestedNames.get(item.finalUrl)
+      : undefined;
+    if (!wanted) {
+      suggest();
+      return;
+    }
+    requestedNames.delete(item.url);
+    suggest({ filename: wanted.filename, conflictAction: wanted.conflictAction });
+  });
+}
+
+const baseName = (path) => String(path ?? '').split(/[\\/]/).pop();
+
+/**
+ * Whether Chrome kept the name we asked for. Its own " (1)" suffix for a
+ * duplicate name ("uniquify") still counts as the same name.
+ */
+export function sameDownloadName(requestedPath, finalPath) {
+  const strip = (name) => name.replace(/ \(\d+\)(?=\.[^.]+$|$)/, '');
+  return strip(baseName(requestedPath)) === strip(baseName(finalPath));
+}
+
+/**
+ * Report once if the file lands under a different name. That still happens
+ * when another extension that names downloads was installed after this one:
+ * Chrome lets the most recently installed one decide, and nothing here can
+ * override it, so the user is at least told what the file is and why.
+ */
+function watchFinalName(id, requestedPath, onRenamed) {
+  let done = false;
+  const check = (finalPath) => {
+    if (done || !finalPath) return;
+    done = true;
+    chrome.downloads.onChanged.removeListener(onChanged);
+    clearTimeout(timer);
+    if (!sameDownloadName(requestedPath, finalPath)) {
+      onRenamed({ downloadId: id, requested: baseName(requestedPath), actual: baseName(finalPath) });
+    }
+  };
+  function onChanged(delta) {
+    if (delta.id === id && delta.filename?.current) check(delta.filename.current);
+  }
+  const timer = setTimeout(() => { done = true; chrome.downloads.onChanged.removeListener(onChanged); }, COMPLETION_TIMEOUT_MS);
+  timer?.unref?.();
+  chrome.downloads.onChanged.addListener(onChanged);
+  chrome.downloads.search({ id }, (items) => check(items?.[0]?.filename));
+}
 
 /**
  * Start a download and resolve with its id.
@@ -18,15 +100,17 @@ const COMPLETION_TIMEOUT_MS = 120_000;
  * segments were already sanitised in common/filenames.js, because a rejection
  * here happens after all the network work is done.
  */
-export async function startDownload({ blobUrl, filename, conflictAction = 'uniquify' }) {
+export async function startDownload({ blobUrl, filename, conflictAction = 'uniquify', onRenamed }) {
   const safeName = safeDownloadPath(filename);
   const attempt = (name) => new Promise((resolve, reject) => {
+    rememberName(blobUrl, name, conflictAction);
     chrome.downloads.download({ url: blobUrl, filename: name, conflictAction, saveAs: false }, (id) => {
       const error = chrome.runtime.lastError;
       if (error || id === undefined) {
         reject(new Error(error?.message ?? `Download refused for ${filename}`));
         return;
       }
+      if (onRenamed) watchFinalName(id, name, onRenamed);
       resolve(id);
     });
   });

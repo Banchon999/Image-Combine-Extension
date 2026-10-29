@@ -26,6 +26,8 @@ const state = {
   current: null,
   jobs: new Map(),
   followed: [],
+  // Files Chrome saved under another name than the one asked for.
+  renamed: [],
 };
 
 /* ------------------------------- messaging -------------------------------- */
@@ -612,8 +614,23 @@ function renderSeries({ series, adapterId, ref }, options = {}) {
 
 /* ---------------------------------- queue --------------------------------- */
 
+/** Explain files that another extension renamed, with what to do about it. */
+function renamedNotice() {
+  if (!state.renamed.length) return null;
+  const last = state.renamed[state.renamed.length - 1];
+  const dismiss = el('button', { text: t('dismissNotice', undefined, 'Dismiss'), onclick: () => { state.renamed = []; renderQueue(); } });
+  return el('div', { class: 'notice error' }, [
+    el('strong', { text: t('downloadRenamed', [state.renamed.length, last.actual, last.requested],
+      `Chrome saved ${state.renamed.length} file(s) under another name, e.g. "${last.actual}" instead of "${last.requested}". `) }),
+    t('downloadRenamedHelp', undefined, 'Another extension that names downloads (such as a download manager) overrode it. The contents are complete: rename the file yourself, turn that extension off, or remove and re-add Webtoon Downloader so it is the most recently installed. '),
+    dismiss,
+  ]);
+}
+
 function renderQueue() {
   const body = clear($('queue-body'));
+  const renamed = renamedNotice();
+  if (renamed) body.append(renamed);
   if (state.jobs.size === 0) {
     body.append(el('div', { class: 'empty', text: t('queueEmpty', undefined, 'No downloads yet.') }));
     return;
@@ -704,6 +721,10 @@ function renderQueue() {
 chrome.runtime.onMessage.addListener((message) => {
   if (message?.type === MSG.JOB_UPDATED) {
     state.jobs.set(message.payload.id, message.payload);
+    renderQueue();
+  }
+  if (message?.type === MSG.DOWNLOAD_RENAMED && message.payload) {
+    state.renamed = [...state.renamed, message.payload].slice(-200);
     renderQueue();
   }
   // Not handled here; let another context respond.
