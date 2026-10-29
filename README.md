@@ -1,5 +1,10 @@
 # Webtoon Downloader
 
+## v1.6.1 — Files no longer saved under a random name
+
+- **Fixed:** with another extension installed that names downloads (download managers and organisers often do), Chrome dropped this extension's file names and saved files as a bare ID with no extension, such as `0cc281d0-3d10-4fa4-8aa2-ed93ad9d6013`, at the top of Downloads. The extension now answers Chrome's naming step itself for its own downloads, so they keep their names and folders. Other downloads are untouched.
+- Chrome lets the most recently installed of those extensions decide. If one was installed after this one, a file can still land under such a name; the queue then says so, with the intended name, and what to do: rename it, turn the other extension off, or remove and re-add this one.
+
 ## v1.6.0 — Violet Scans
 
 - Paste a `violetmanga.com` series or chapter link (old `violetscans.org` / `violetscans.com` links work too), or pick **Violet Scans** in **Search site**.

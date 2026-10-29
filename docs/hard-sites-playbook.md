@@ -147,4 +147,6 @@ curl -s -o /dev/null -w '%{http_code}\n' -A "$UA" https://media.SITE/...        
 - ชื่อภาษาเกาหลี/ไทยกลายเป็น `webtoon-<uuid>` → รันด้วย `LANG=C.UTF-8` (ปัญหาของ container ไม่ใช่ของ extension)
 - WAF บล็อก "HeadlessChrome" → รันแบบ headed ใต้ `xvfb-run -a`
 - `pkill -f` อาจฆ่า shell ตัวเอง → ใช้ pattern แบบ `[c]hrome`
+- ผู้ใช้ได้ไฟล์ชื่อเป็นรหัสยาว ๆ ไม่มีนามสกุล (เช่น `0cc281d0-3d10-…`) = มีส่วนขยายอื่นที่ฟัง `chrome.downloads.onDeterminingFilename` ติดตั้งหลังเรา Chrome เลยทิ้งชื่อที่เราส่งไปแล้วใช้ UUID ของ blob URL แทน (ทดสอบได้โดยโหลดส่วนขยายจำลองที่เรียก `suggest()` เปล่า ๆ คู่กัน) ดู `installFilenameGuard` ใน `download-manager.js`
+- `pkill -f` จับ command line ของ shell ตัวเองได้แม้ใช้ `[c]` ถ้าคำสั่งเดียวกันมีข้อความที่ match อยู่ส่วนอื่น ให้แยกเป็นคนละคำสั่ง
 - ตรวจไฟล์ที่ได้: magic bytes ตรงกับนามสกุล, จำนวนหน้า PDF, CRC ของ zip, ลำดับไฟล์, ชื่อไฟล์ตรงกับตอน

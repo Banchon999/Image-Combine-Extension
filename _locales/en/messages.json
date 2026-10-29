@@ -106,6 +106,9 @@
   "bundleInsideStitched": { "message": "Pages are stitched first." },
   "bundleSizeHint": { "message": "A very large selection may be too big to build." },
   "bundleOffHint": { "message": "Off: each chapter is saved as its own file." },
+  "dismissNotice": {"message": "Dismiss"},
+  "downloadRenamed": {"message": "Chrome saved $1 file(s) under another name, e.g. “$2” instead of “$3”. ", "placeholders": {"count": {"content": "$1"}, "actual": {"content": "$2"}, "requested": {"content": "$3"}}},
+  "downloadRenamedHelp": {"message": "Another extension that names downloads (such as a download manager) overrode it. The contents are complete: rename the file yourself, turn that extension off, or remove and re-add Webtoon Downloader so it is the most recently installed. "},
 
   "stitchModeSmart": { "message": "Smart — choose the height for you" },
   "stitchModeHeight": { "message": "Set a maximum height per image" },

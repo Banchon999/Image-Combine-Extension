@@ -7,18 +7,20 @@
  * trip lives in the offscreen document instead.
  */
 
-import { MSG } from '../common/messages.js';
+import { MSG, broadcast } from '../common/messages.js';
 import { getSettings, updateSettings } from '../common/settings.js';
 import { createLogger, recentLogs } from '../common/logger.js';
 import { resolveUrl, ADAPTERS } from '../adapters/registry.js';
 import { ensureRulesEnabled } from './net-rules.js';
-import { startDownload, removeDownloadedFiles } from './download-manager.js';
+import { startDownload, removeDownloadedFiles, installFilenameGuard } from './download-manager.js';
 import { searchInTab } from './site-search.js';
 import { createFollowingStore } from './following-store.js';
 
 const log = createLogger('worker');
 const OFFSCREEN_PATH = 'src/offscreen/offscreen.html';
 const following = createFollowingStore(chrome.storage.local);
+// Top level, so it is registered before any download this worker starts.
+installFilenameGuard();
 
 /* ----------------------------- offscreen setup ---------------------------- */
 
@@ -133,7 +135,13 @@ const handlers = {
   /* -- called by the offscreen document -- */
 
   async 'download-file'({ blobUrl, filename, conflictAction }) {
-    const downloadId = await startDownload({ blobUrl, filename, conflictAction });
+    const downloadId = await startDownload({
+      blobUrl, filename, conflictAction,
+      onRenamed: (info) => {
+        log.warn('Chrome saved a download under another name.', info);
+        broadcast(MSG.DOWNLOAD_RENAMED, info);
+      },
+    });
     return { downloadId };
   },
 
