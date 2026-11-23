@@ -12,7 +12,7 @@
  */
 
 import { MSG, broadcast } from '../common/messages.js';
-import { FetchError, ProtectedContentError, RefererRuleError } from '../common/errors.js';
+import { BotCheckError, FetchError, ProtectedContentError, RefererRuleError, isBotCheck } from '../common/errors.js';
 import { createEngine } from './engine.js';
 import { detectImageMime } from '../common/image-types.js';
 import { stitchPages } from './convert/stitch.js';
@@ -35,12 +35,12 @@ async function request(url, { signal, accept, timeoutMs = REQUEST_TIMEOUT_MS, im
   });
 
   if (!response.ok) {
+    const body = [403, 429, 503].includes(response.status) ? await response.clone().text().catch(() => '') : '';
+    // An anti-bot challenge page: stop, never retry or try to pass it.
+    if (isBotCheck(response.status, response.headers, body)) throw new BotCheckError(url, { status: response.status });
     // A 403 alone does not prove a Referer failure (signed URLs can expire).
-    if (response.status === 403 && image) {
-      const body = await response.clone().text().catch(() => '');
-      if (/referr?al denied|invalid referer|referer denied/i.test(body)) {
-        throw new RefererRuleError(undefined, { url });
-      }
+    if (response.status === 403 && image && /referr?al denied|invalid referer|referer denied/i.test(body)) {
+      throw new RefererRuleError(undefined, { url });
     }
     const retryAfter = response.headers.get('retry-after');
     const retryAfterMs = retryAfter

@@ -1,5 +1,11 @@
 # Webtoon Downloader
 
+## v1.7.1 — Clear message when a site shows an anti-bot check
+
+- **Magus Manga images could fail with "HTTP 403".** Its image server (`media.magustoon.org`) can answer the extension with Cloudflare's "Just a moment… Enable JavaScript and cookies to continue" check instead of the picture, even though the same image opens in a browser tab. The extension cannot pass that check and does not try to get around it.
+- Such an answer (on any site) is now recognised and reported as what it is, with what to do, instead of a bare "HTTP 403". The chapter stops at the first one: no retries and no further page requests, where it used to repeat the request three times for every page.
+- No new permissions.
+
 ## v1.7.0 — Eva Scans, Magus Manga, Valir Scans, Siren Scans
 
 - **Find a title on every site at once (comick.dev).** Pick **Any site (find the title via comick.dev)** in **Search site** and search by English, original (Korean, Japanese, Chinese) or alternative name. Choose a result and the extension searches every supported site that has search (WEBTOON, Asura, NYX, EZ Manga, Violet, Eva, Magus, Valir, Siren) for its English names. Only exact title matches are listed, under the result, with the site name. Click one to open its chapter list. comick.dev is only used to look up titles through its public search API (`api.comick.dev`). Its series and chapter pages are behind a Cloudflare challenge and are never requested, and nothing is downloaded from it.
