@@ -16,6 +16,7 @@ import { archivePath, imagePath, imageExtension, padChapter, chapterFolderName, 
 import { parseRange, readableRange } from '../common/ranges.js';
 import { CancelledError, FetchError, ProtectedContentError, RefererRuleError } from '../common/errors.js';
 import { getAdapterById, resolveUrl } from '../adapters/registry.js';
+import { comickSearchUrl, parseComickResults, findOnSites } from '../common/comick.js';
 import { buildCbz } from './convert/cbz.js';
 import { buildPdf } from './convert/pdf.js';
 
@@ -415,6 +416,24 @@ export function createEngine(/** @type {EngineIO} */ io) {
       const adapter = lookup(adapterId);
       if (!adapter?.capabilities.search) return [];
       return adapter.search(query, lang, context());
+    },
+    /** Title lookup on comick.dev (a title index only; nothing is downloaded from it). */
+    async comickSearch({ query }) {
+      const q = String(query ?? '').trim();
+      if (!q) return [];
+      return parseComickResults(await context().fetchJson(comickSearchUrl(q)));
+    },
+    /** Search the supported sites for the titles of one comick result. */
+    async findOnSites({ titles }) {
+      const ctx = context();
+      return findOnSites(
+        Array.isArray(titles) ? titles.map(String) : [],
+        async (adapterId, title) => {
+          const adapter = lookup(adapterId);
+          return adapter?.capabilities.search ? adapter.search(title, 'en', ctx) : [];
+        },
+        (adapterId) => lookup(adapterId)?.label ?? adapterId,
+      );
     },
     async getSeries({ url, adapterId, ref }) {
       const resolved = url ? resolveUrl(url) : { adapter: lookup(adapterId), ref };

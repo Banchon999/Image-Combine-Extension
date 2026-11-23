@@ -664,3 +664,8 @@ label.field + .hint { margin-top: -6px; }
   .spinner { animation-duration: 2.4s; }
   .strip-fill { transition: none; }
 }
+
+/* comick.dev title lookup: the matches found on supported sites sit under their title. */
+.comick-found:not(:empty) { margin: 4px 0 8px 18px; }
+.comick-found .card { margin-bottom: 4px; }
+.comick-found .notice { margin: 4px 0; }
