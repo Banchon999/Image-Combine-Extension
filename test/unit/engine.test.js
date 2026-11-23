@@ -10,7 +10,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createEngine } from '../../src/offscreen/engine.js';
-import { RefererRuleError, FetchError, ProtectedContentError } from '../../src/common/errors.js';
+import { RefererRuleError, FetchError, ProtectedContentError, BotCheckError, isBotCheck } from '../../src/common/errors.js';
 import { STATUS } from '../../src/common/messages.js';
 
 /** A minimal valid baseline JPEG, so the PDF writer has something real to parse. */
@@ -638,4 +638,32 @@ test('a stitched chapter without a title is named "001 - stitched", not "001 - -
       ? 'Webtoons/Untitled Series/001 - stitched.cbz'
       : 'Webtoons/Untitled Series/001 - stitched/001.jpg');
   }
+});
+
+/* ------------------------------ anti-bot checks ----------------------------- */
+
+test('isBotCheck recognises Cloudflare challenge pages only', () => {
+  const headers = (map = {}) => ({ get: (name) => map[name.toLowerCase()] ?? null });
+  const page = '<!DOCTYPE html><html lang="en-US"><head><title>Just a moment...</title></head><body>Enable JavaScript and cookies to continue</body></html>';
+  assert.equal(isBotCheck(403, headers(), page), true);
+  assert.equal(isBotCheck(200, headers({ 'cf-mitigated': 'challenge' }), ''), true);
+  assert.equal(isBotCheck(403, headers(), '<html>Forbidden</html>'), false, 'an ordinary 403');
+  assert.equal(isBotCheck(404, headers(), page), false);
+});
+
+test('an anti-bot check stops the chapter: no retries, no further page requests', async () => {
+  const requested = [];
+  const { io } = recordingIo({
+    fetchImage: async (url) => {
+      requested.push(url);
+      throw new BotCheckError(url, { status: 403 });
+    },
+  });
+  const job = await createEngine(io).runJob({
+    jobId: 'botcheck', adapterId: 'stub', ref: {}, selection: '1',
+    settings: { ...baseSettings, format: 'cbz', concurrentImages: 1, retryAttempts: 3 },
+  });
+  assert.equal(job.status, STATUS.FAILED);
+  assert.deepEqual(requested, ['https://cdn.stub.test/c1-p1.jpg'], 'one request, then stop');
+  assert.match(job.chapters[0].note, /Just a moment.*does not try to get around/s);
 });

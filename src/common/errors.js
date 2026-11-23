@@ -40,6 +40,37 @@ export class FetchError extends WebtoonDlError {
 }
 
 /**
+ * The site answered with an anti-bot check (Cloudflare's "Just a moment…"
+ * page) instead of the data. The extension cannot pass such a check and does
+ * not try to: it stops asking, instead of repeating the request for every
+ * page, and tells the user.
+ */
+export class BotCheckError extends FetchError {
+  constructor(url, { status } = {}) {
+    let host = '';
+    try { host = new URL(url).hostname; } catch { /* keep empty */ }
+    super(
+      `${host || 'The site'} answered with a Cloudflare "Just a moment…" check instead of the content. ` +
+      'This extension cannot pass anti-bot checks and does not try to get around them. ' +
+      'Open the chapter on the site in this browser; if it reads normally there, try again later. ' +
+      'If it keeps happening, this site cannot be downloaded from right now.',
+      { url, status },
+    );
+  }
+}
+
+/**
+ * Whether an error response is an anti-bot challenge page rather than an
+ * ordinary refusal. Cloudflare marks its challenges with the cf-mitigated
+ * header; the page title and text are the fallback.
+ */
+export function isBotCheck(status, headers, body = '') {
+  if (String(headers?.get?.('cf-mitigated') ?? '').toLowerCase() === 'challenge') return true;
+  if (status !== 403 && status !== 429 && status !== 503) return false;
+  return /<title>\s*Just a moment\.\.\.\s*<\/title>|challenges\.cloudflare\.com|Enable JavaScript and cookies to continue/i.test(String(body));
+}
+
+/**
  * The image CDN rejected us for a missing/incorrect Referer.
  *
  * Called out separately because it has exactly one cause (the

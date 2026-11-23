@@ -14,7 +14,7 @@ import { pool, withRetry, delay } from '../common/pool.js';
 import { normalizeSettings } from '../common/settings.js';
 import { archivePath, imagePath, imageExtension, padChapter, chapterFolderName, seriesBundlePath } from '../common/filenames.js';
 import { parseRange, readableRange } from '../common/ranges.js';
-import { CancelledError, FetchError, ProtectedContentError, RefererRuleError } from '../common/errors.js';
+import { BotCheckError, CancelledError, FetchError, ProtectedContentError, RefererRuleError } from '../common/errors.js';
 import { getAdapterById, resolveUrl } from '../adapters/registry.js';
 import { comickSearchUrl, parseComickResults, findOnSites } from '../common/comick.js';
 import { buildCbz } from './convert/cbz.js';
@@ -63,8 +63,11 @@ export function createEngine(/** @type {EngineIO} */ io) {
    */
   async function fetchChapterImages(images, settings, signal, onImageDone) {
     let completed = 0;
+    // Once the site answers with an anti-bot check, ask for nothing more.
+    let botCheck = null;
 
     const fetchPage = async (image) => {
+      if (botCheck) throw botCheck;
       try {
         return await io.fetchImage(image.url, signal, { requirePlainImage: image.requirePlainImage === true });
       } catch (error) {
@@ -73,6 +76,7 @@ export function createEngine(/** @type {EngineIO} */ io) {
         // if the Referer rule itself is broken, both URLs fail and the second
         // error still surfaces clearly without entering the retry loop.
         if (
+          !(error instanceof BotCheckError) &&
           image.fallbackUrl &&
           image.fallbackUrl !== image.url &&
           (error instanceof RefererRuleError || error?.status === 403 || error?.status === 404)
@@ -98,7 +102,11 @@ export function createEngine(/** @type {EngineIO} */ io) {
           baseMs: 1_000,
           signal,
           // A Referer failure is deterministic; retrying only multiplies the 403s.
-          shouldRetry: (error) => !(error instanceof RefererRuleError),
+          // An anti-bot check is not retried either: it is never worked around.
+          shouldRetry: (error) => !(error instanceof RefererRuleError) && !(error instanceof BotCheckError),
+        }).catch((error) => {
+          if (error instanceof BotCheckError) botCheck ??= error;
+          throw error;
         });
 
         completed += 1;
