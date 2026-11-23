@@ -264,19 +264,23 @@ function selectSearchSite() {
   const site = $('search-site').value;
   const korean = site === 'naver' || site === 'kakao';
   const asura = site === 'asura';
+  const comick = site === 'comick';
   // English scanlation sites that sell chapters for coins.
   const scans = ['nyx', 'ezmanga', 'violet', 'eva', 'magus', 'valir', 'siren'].includes(site);
   // Only WEBTOON publishes in several languages; every other site has one.
   const fixed = korean ? { code: 'ko', label: '한국어 (Korean)' }
-    : asura || scans ? { code: 'en', label: 'English' } : null;
+    : asura || scans ? { code: 'en', label: 'English' }
+      : comick ? { code: 'any', label: t('anyLanguage', undefined, 'Any language') } : null;
   clear(select);
   for (const { code, label } of fixed ? [fixed] : LANGUAGES) {
     select.append(el('option', { value: code, text: label }));
   }
   select.disabled = Boolean(fixed);
   select.value = fixed ? fixed.code : webtoonLanguage;
-  $('search-input').placeholder = korean ? '화산귀환 / 나 혼자만 레벨업' : asura ? 'Nano Machine' : scans ? 'Duke' : 'Tower of God';
-  $('search-hint').textContent = korean
+  $('search-input').placeholder = korean ? '화산귀환 / 나 혼자만 레벨업' : asura ? 'Nano Machine' : scans ? 'Duke' : comick ? 'A King is Born on the Road / 왕은 길 위에서' : 'Tower of God';
+  $('search-hint').textContent = comick
+    ? t('searchHintComick', undefined, 'Finds the title on comick.dev (English, original or alternative names), then pick a result to look for it on every supported site. Nothing is downloaded from comick.dev.')
+    : korean
     ? t('searchHintKorean', undefined, 'Search Korean titles/authors. Opens a temporary tab and closes it after reading the first results. Kakao searches webtoons only; account access is opt-in on the chapter page.')
     : asura
       ? t('searchHintAsura', undefined, 'Search Asura Scans by English or original title. Chapters still in paid early access are listed but not downloaded.')
@@ -304,6 +308,26 @@ async function runSearch() {
   clear(status).append(el('div', { class: 'notice' }, [el('span', { class: 'spinner' }), ` ${t('searching', undefined, 'Searching…')}`]));
   searching = true;
   $('search-go').disabled = true;
+
+  if (adapterId === 'comick') {
+    try {
+      const found = await send(MSG.COMICK_SEARCH, { query });
+      if (revision !== searchRevision) return;
+      clear(status);
+      if (!found.length) {
+        notice(status, t('searchNoResults', [query], `Nothing found for "${query}" on the selected site/language.`));
+        return;
+      }
+      notice(status, t('comickResults', [found.length], `comick.dev results: ${found.length}. Pick one to find it on the supported sites.`));
+      for (const item of found) results.append(comickCard(item, revision));
+    } catch (error) {
+      if (revision === searchRevision) notice(status, t('comickFailed', [error.message], `comick.dev search failed: ${error.message}`), 'error');
+    } finally {
+      searching = false;
+      $('search-go').disabled = false;
+    }
+    return;
+  }
   // Only the tab-scraped sites stop at a first batch worth linking out from.
   const partial = adapterId === 'naver' || adapterId === 'kakao';
   if (partial) {
@@ -338,6 +362,54 @@ async function runSearch() {
   } finally {
     searching = false;
     $('search-go').disabled = false;
+  }
+}
+
+/** One comick.dev title; choosing it searches every supported site for it. */
+function comickCard(item, revision) {
+  const found = el('div', { class: 'comick-found' });
+  const details = [item.year, item.country.toUpperCase(), item.lastChapter !== null ? t('comickLastChapter', [item.lastChapter], `Ch. ${item.lastChapter}`) : '']
+    .filter(Boolean).join(' · ');
+  const card = el('button', { class: 'card', onclick: () => findTitle(item, found, card, revision) }, [
+    thumb(item.cover, item.title),
+    el('span', { class: 'meta' }, [
+      el('div', { class: 'title', text: item.title }),
+      el('div', { class: 'sub', text: item.altTitles.slice(0, 2).join(' / ') }),
+      el('div', { class: 'sub', text: details }),
+    ]),
+  ]);
+  return el('div', { class: 'comick-item' }, [card, found]);
+}
+
+async function findTitle(item, found, card, revision) {
+  if (card.disabled) return;
+  card.disabled = true;
+  clear(found).append(el('div', { class: 'notice' }, [el('span', { class: 'spinner' }), ` ${t('comickFinding', undefined, 'Searching the supported sites…')}`]));
+  try {
+    const sites = await send(MSG.FIND_ON_SITES, { titles: item.englishTitles?.length ? item.englishTitles : [item.title] });
+    if (revision !== searchRevision) return;
+    clear(found);
+    const hits = sites.filter((site) => site.results.length);
+    if (!hits.length) {
+      notice(found, t('comickNotFound', undefined, 'Not found on any supported site under this title. The groups may use another name; try searching one site directly.'));
+    }
+    for (const site of hits) {
+      for (const result of site.results) {
+        found.append(el('button', { class: 'card', onclick: () => openSeries({ url: result.url }) }, [
+          thumb(result.thumbnail, result.title),
+          el('span', { class: 'meta' }, [
+            el('div', { class: 'title', text: result.title }),
+            el('div', { class: 'sub', text: site.label }),
+          ]),
+        ]));
+      }
+    }
+    const failed = sites.filter((site) => site.error).map((site) => site.label);
+    if (failed.length) found.append(el('div', { class: 'notice error', text: t('comickSitesFailed', [failed.join(', ')], `Could not search: ${failed.join(', ')}.`) }));
+  } catch (error) {
+    if (revision === searchRevision) notice(clear(found), error.message, 'error');
+  } finally {
+    card.disabled = false;
   }
 }
 

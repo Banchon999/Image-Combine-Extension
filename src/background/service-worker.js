@@ -108,6 +108,14 @@ const handlers = {
     return toOffscreen(MSG.OFF_SEARCH, { query, lang, adapterId });
   },
 
+  async [MSG.COMICK_SEARCH]({ query }) {
+    return toOffscreen(MSG.OFF_COMICK_SEARCH, { query });
+  },
+
+  async [MSG.FIND_ON_SITES]({ titles }) {
+    return toOffscreen(MSG.OFF_FIND_ON_SITES, { titles });
+  },
+
   async [MSG.GET_SERIES]({ url, adapterId, ref }) {
     return toOffscreen(MSG.OFF_GET_SERIES, { url, adapterId, ref });
   },

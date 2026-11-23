@@ -47,6 +47,7 @@
     "*://*.valirscans.org/*",
     "*://*.sirenscans.com/*",
     "*://cdn.meowing.org/*",
+    "https://api.comick.dev/*",
     "https://comic.naver.com/*",
     "https://m.comic.naver.com/*"
   ],

@@ -2,6 +2,7 @@
 
 ## v1.7.0 — Eva Scans, Magus Manga, Valir Scans, Siren Scans
 
+- **Find a title on every site at once (comick.dev).** Pick **Any site (find the title via comick.dev)** in **Search site** and search by English, original (Korean, Japanese, Chinese) or alternative name. Choose a result and the extension searches every supported site that has search (WEBTOON, Asura, NYX, EZ Manga, Violet, Eva, Magus, Valir, Siren) for its English names. Only exact title matches are listed, under the result, with the site name. Click one to open its chapter list. comick.dev is only used to look up titles through its public search API (`api.comick.dev`). Its series and chapter pages are behind a Cloudflare challenge and are never requested, and nothing is downloaded from it.
 - Paste a series or chapter link from `evascans.net`, `magustoon.org` (Magus Manga), `valirscans.org` or `sirenscans.com`, or pick the site in **Search site**.
 - **Eva Scans** uses the same WordPress theme as Violet Scans and shares its code (`/series/` instead of `/comics/`). **Magus Manga** runs the same comic CMS as NYX Scans and reads the same JSON API (`api.magustoon.org`). `magusmanga.com` is now an unrelated site and is not supported.
 - **Valir Scans** has no public chapter API; the series and chapter data embedded in its Next.js pages is read as data (never run), 100 chapters per page.
@@ -10,7 +11,7 @@
 - **Valir: some chapters are served encrypted or split into tiles.** Those are refused with a message; the extension does not decrypt or reassemble pages.
 - Text novels are left out of search and refused with a clear message on every site.
 - **comix.to is not supported.** Its chapter and page API answers only with a token produced by obfuscated anti-scraping code (`Missing token` otherwise), and this extension does not get around anti-bot measures. It mostly re-hosts other groups' releases, including the four sites above.
-- New permissions: `*://*.evascans.net/*`, `*://*.magustoon.org/*`, `*://*.valirscans.org/*`, `*://*.sirenscans.com/*`, `*://cdn.meowing.org/*`. Reload the unpacked extension and accept them.
+- New permissions: `*://*.evascans.net/*`, `*://*.magustoon.org/*`, `*://*.valirscans.org/*`, `*://*.sirenscans.com/*`, `*://cdn.meowing.org/*`, `https://api.comick.dev/*`. Reload the unpacked extension and accept them.
 
 ## v1.6.1 — Files no longer saved under a random name
 

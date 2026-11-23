@@ -9,6 +9,8 @@
 export const MSG = /** @type {const} */ ({
   // panel -> worker
   SEARCH: 'search',
+  COMICK_SEARCH: 'comick:search',
+  FIND_ON_SITES: 'comick:find-on-sites',
   RESOLVE_URL: 'resolve-url',
   GET_SERIES: 'get-series',
   START_JOB: 'start-job',
@@ -26,6 +28,8 @@ export const MSG = /** @type {const} */ ({
 
   // worker -> offscreen
   OFF_SEARCH: 'offscreen:search',
+  OFF_COMICK_SEARCH: 'offscreen:comick-search',
+  OFF_FIND_ON_SITES: 'offscreen:find-on-sites',
   OFF_GET_SERIES: 'offscreen:get-series',
   OFF_GET_IMAGES: 'offscreen:get-chapter-images',
   OFF_FETCH_CHAPTER: 'offscreen:fetch-chapter',

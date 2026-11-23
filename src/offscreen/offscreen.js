@@ -164,6 +164,8 @@ const engine = createEngine(io);
 
 const handlers = {
   [MSG.OFF_SEARCH]: (payload) => engine.search(payload),
+  [MSG.OFF_COMICK_SEARCH]: (payload) => engine.comickSearch(payload),
+  [MSG.OFF_FIND_ON_SITES]: (payload) => engine.findOnSites(payload),
   [MSG.OFF_GET_SERIES]: (payload) => engine.getSeries(payload),
   /**
    * A job runs for seconds to minutes; the sender's service worker is torn
