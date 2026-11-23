@@ -1,5 +1,17 @@
 # Webtoon Downloader
 
+## v1.7.0 — Eva Scans, Magus Manga, Valir Scans, Siren Scans
+
+- Paste a series or chapter link from `evascans.net`, `magustoon.org` (Magus Manga), `valirscans.org` or `sirenscans.com`, or pick the site in **Search site**.
+- **Eva Scans** uses the same WordPress theme as Violet Scans and shares its code (`/series/` instead of `/comics/`). **Magus Manga** runs the same comic CMS as NYX Scans and reads the same JSON API (`api.magustoon.org`). `magusmanga.com` is now an unrelated site and is not supported.
+- **Valir Scans** has no public chapter API; the series and chapter data embedded in its Next.js pages is read as data (never run), 100 chapters per page.
+- **Siren Scans** reads the chapter list endpoint and chapter pages its own scripts use. Pages are AVIF originals from `cdn.meowing.org` rather than the resizing proxy (`wsrv.nl`) the list links to.
+- **Paid chapters are never downloaded.** All four sell chapters for coins and mark them in the chapter list (Eva: no link, only a price; Magus: `isLocked` / `price` / ad-link / permanent lock flags; Valir: `isLocked` / `coinPrice` / `hasAccess` / early access; Siren: `data-ch-locked` / `paid` / `coins` / `tier`). A locked chapter is listed but left out of the pre-filled selection and refused before any request. If a server still withholds a chapter (Eva's "This chapter is locked" page, Valir's redacted pages, Siren's page without a page list), that is treated as protected, never worked around.
+- **Valir: some chapters are served encrypted or split into tiles.** Those are refused with a message; the extension does not decrypt or reassemble pages.
+- Text novels are left out of search and refused with a clear message on every site.
+- **comix.to is not supported.** Its chapter and page API answers only with a token produced by obfuscated anti-scraping code (`Missing token` otherwise), and this extension does not get around anti-bot measures. It mostly re-hosts other groups' releases, including the four sites above.
+- New permissions: `*://*.evascans.net/*`, `*://*.magustoon.org/*`, `*://*.valirscans.org/*`, `*://*.sirenscans.com/*`, `*://cdn.meowing.org/*`. Reload the unpacked extension and accept them.
+
 ## v1.6.1 — Files no longer saved under a random name
 
 - **Fixed:** with another extension installed that names downloads (download managers and organisers often do), Chrome dropped this extension's file names and saved files as a bare ID with no extension, such as `0cc281d0-3d10-4fa4-8aa2-ed93ad9d6013`, at the top of Downloads. The extension now answers Chrome's naming step itself for its own downloads, so they keep their names and folders. Other downloads are untouched.
@@ -281,6 +293,10 @@ Requests ride on your browser's own session, so age-gated series work without th
 | **ezmanga.org** (and ezmanhwa.com) | English search, chapter listing, downloads; paid chapters are skipped; novels excluded |
 | **luacomic.org** | Series and chapter links (no search), chapter listing, downloads; paid chapters are skipped |
 | **violetmanga.com** (Violet Scans; old violetscans.org links too) | English search, chapter listing, downloads; paid chapters are skipped; novels excluded |
+| **evascans.net** (Eva Scans) | English search, chapter listing, downloads; paid chapters are skipped; novels excluded |
+| **magustoon.org** (Magus Manga) | English search, chapter listing, downloads; locked chapters are skipped; novels excluded |
+| **valirscans.org** (Valir Scans) | English search, chapter listing, downloads; paid and encrypted chapters are skipped; novels excluded |
+| **sirenscans.com** (Siren Scans) | English search, chapter listing, downloads (AVIF pages); paid chapters are skipped; novels excluded |
 
 ### Kakao Page: free by default, existing account access optional
 

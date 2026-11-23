@@ -20,6 +20,10 @@ const SLUG_SITES = {
   ezmanga: lenientSlug,
   lua: lenientSlug,
   violet: lenientSlug,
+  eva: lenientSlug,
+  magus: lenientSlug,
+  valir: lenientSlug,
+  siren: lenientSlug,
 };
 
 /**
@@ -93,7 +97,8 @@ export function safeCover(value) {
     const url = new URL(value);
     if (!['https:','http:'].includes(url.protocol)) return '';
     if (!['pstatic.net','webtoons.com','kakao.com','kakaoentcdn.com','webtoon.co.kr','asurascans.com',
-      'nyxscans.com','ezmanga.org','luacomic.org','violetmanga.com']
+      'nyxscans.com','ezmanga.org','luacomic.org','violetmanga.com',
+      'evascans.net','magustoon.org','valirscans.org','cdn.meowing.org']
       .some(host => url.hostname === host || url.hostname.endsWith(`.${host}`))) return '';
     return url.href;
   } catch { return ''; }

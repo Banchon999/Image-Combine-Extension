@@ -189,5 +189,98 @@
         "image"
       ]
     }
+  },
+  {
+    "id": 9,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://evascans.net/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "evascans.net"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": 10,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://magustoon.org/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "magustoon.org"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": 11,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://valirscans.org/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "valirscans.org"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest",
+        "image"
+      ]
+    }
+  },
+  {
+    "id": 12,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://sirenscans.com/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": [
+        "sirenscans.com",
+        "cdn.meowing.org"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest",
+        "image"
+      ]
+    }
   }
 ]

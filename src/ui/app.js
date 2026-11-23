@@ -265,7 +265,7 @@ function selectSearchSite() {
   const korean = site === 'naver' || site === 'kakao';
   const asura = site === 'asura';
   // English scanlation sites that sell chapters for coins.
-  const scans = site === 'nyx' || site === 'ezmanga' || site === 'violet';
+  const scans = ['nyx', 'ezmanga', 'violet', 'eva', 'magus', 'valir', 'siren'].includes(site);
   // Only WEBTOON publishes in several languages; every other site has one.
   const fixed = korean ? { code: 'ko', label: '한국어 (Korean)' }
     : asura || scans ? { code: 'en', label: 'English' } : null;

@@ -26,7 +26,10 @@
 | `curl` และ Chromium ใน sandbox ได้ 403 "Sorry, you have been blocked" (Cloudflare) | **แบบ Lua** | ข้อ 3 |
 | 403 เฉพาะ Chromium headless (WAF บล็อก UA "HeadlessChrome") | แบบ EZ Manga | ข้อ 5 (ใช้ headed + Xvfb ตอนเทส) ผู้ใช้จริงไม่โดน |
 | เปิดได้ปกติ มี JSON API | ง่าย | ข้อ 4 อย่างเดียว |
-| เปิดได้ปกติ เป็น WordPress ธีม MangaReader (มี `wp-content`, `ts_reader.run`) | ง่าย (แบบ Violet) | ข้อ 3.5 แล้วข้อ 4 |
+| เปิดได้ปกติ เป็น WordPress ธีม MangaReader (มี `wp-content`, `ts_reader.run`) | ง่าย (แบบ Violet / Eva) | ข้อ 3.5 แล้วข้อ 4 |
+| มี `api.SITE/api/post?postSlug=` และ `/api/chapters?postId=` (หน้าเว็บโหลดจาก `/_vcomics/` หรือ Next.js) | ง่าย (แบบ NYX / Magus) | ข้อ 3.6 |
+| Next.js ไม่มี API รายชื่อตอน ข้อมูลอยู่ใน `self.__next_f.push` | ปานกลาง (แบบ Valir) | ข้อ 3.6 |
+| API ตอบ `Missing token` / ต้องใช้ token จากโค้ด obfuscate (VM) | **ห้ามทำ** (แบบ comix.to) | ข้อ 3.6 |
 
 ตรวจเบื้องต้น:
 
@@ -120,6 +123,19 @@ curl -s -o /dev/null -w '%{http_code}\n' -A "$UA" https://media.SITE/...        
 - ลิงก์ตอนเป็น `/{series-slug}-chapter-N/` เลยรู้เรื่องได้จากลิงก์ตอน (ถ้า 404 ให้อ่านลิงก์ "All chapters are in" ในหน้าตอน)
 - Following ต้องการ id ตัวเลขของตอน ตอนฟรีไม่มี id ในรายการ จึงใช้เลขตอน × 1000 กับทุกตอน (id ไม่เปลี่ยนเมื่อตอนปลดล็อก)
 - เก็บหน้าเว็บจริงหลาย ๆ เรื่อง (Violet ใช้ 25 เรื่อง) มาสำรวจก่อนเขียน: เลขตอนแปลก ๆ, รูปแบบลิงก์, จำนวนตอนล็อก
+
+### 3.6 ตัวกลางที่ใช้ซ้ำได้ และเว็บที่ห้ามทำ (เพิ่มใน v1.7.0)
+
+- **ธีม MangaReader**: `createMangaReaderSite({id,label,site,hosts,hostPatterns,seriesPath})` ใน `violet.js` (Eva ใช้ `seriesPath: 'series'`) ปกผ่าน `i*.wp.com` จะถูกแปลงกลับเป็นโดเมนเว็บเอง
+  - Eva ตอน 1 เรียงรูป 0008…0016 แล้ว 0001…0007 และเป็นลำดับที่ถูก (0008 = หน้าเครดิตเปิด, 0007 = หน้าปิด) ตรวจด้วยการเปิดรูปดู
+- **CMS แบบ NYX**: `createComicCmsSite({id,label,site,api,hosts,hostPatterns})` ใน `nyx.js` (Magus = `api.magustoon.org`) ตรวจ flag `isPermanentlyLocked` ด้วย
+- **Valir (Next.js RSC)**: ต่อ string ของทุก `self.__next_f.push([1,"..."])` ด้วย `JSON.parse` แล้วหา `"chapters":[` / `"chapter":{` / `"initialSeries":[` แบบนับวงเล็บ (`jsonAt`) ห้าม eval รายชื่อตอนหน้า ละ 100 ใช้ `?page=N` ค้นหา `/series?q=`
+  - หน้าตอนล็อก: `pages[].isRedacted: true`, `imageUrl: ""`
+  - บางตอนฟรีก็ส่งรูปแบบ `isEncrypted` / `tiles` / `fragments` → ปฏิเสธ (ห้ามถอดรหัส/ต่อชิ้น)
+- **Siren**: `/?_chapters_html=1&series_uid=&series_slug=` (uid อยู่ใน `#chapters-list[data-series-uid]` ของหน้าเรื่อง) แต่ละแถวมี `data-ch-locked/paid/coins/tier` รูปอยู่ใน `<script id="chapter-offline-data">` เป็นลิงก์ `wsrv.nl/?url=cdn.meowing.org/...` → ใช้ `cdn.meowing.org` ตรง ๆ (AVIF) ค้นหา `/?_ajax=suggest&q=`
+  - ระบบของ Claude ไม่อนุญาตให้เปิดหน้าตอนล็อกเพื่อดูรูปแบบ จึงถือว่า "ไม่มี page list = ล็อก"
+- **comix.to ห้ามทำ**: `api/v1/manga/{hid}/chapters` ตอบ 403 `Missing token` token มาจาก `secure-*.js` ที่เป็น VM obfuscate = ระบบกันบอท ห้ามแกะ / หลบ บอกผู้ใช้ให้ใช้เว็บกลุ่มแปลต้นทางแทน
+- เทสดาวน์โหลดจริง: สำเนา `test/browser/live.mjs` ไปไว้ใน scratchpad แล้วรับ URL + selection จาก argv, เพิ่ม CDP `Browser.setDownloadBehavior({behavior:'default'})` และใช้ `od` แทน `xxd` (ไม่มีใน container) รันด้วย `LANG=C.UTF-8 xvfb-run -a node ...`
 
 ---
 

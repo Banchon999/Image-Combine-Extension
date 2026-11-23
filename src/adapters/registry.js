@@ -13,10 +13,15 @@ import { nyxAdapter } from './nyx.js';
 import { ezmangaAdapter } from './ezmanga.js';
 import { luaAdapter } from './lua.js';
 import { violetAdapter } from './violet.js';
+import { evaAdapter } from './eva.js';
+import { magusAdapter } from './magus.js';
+import { valirAdapter } from './valir.js';
+import { sirenAdapter } from './siren.js';
 import { UnsupportedUrlError } from '../common/errors.js';
 
 /** Registration order is match order. */
-export const ADAPTERS = [webtoonsAdapter, naverAdapter, kakaoAdapter, asuraAdapter, nyxAdapter, ezmangaAdapter, luaAdapter, violetAdapter];
+export const ADAPTERS = [webtoonsAdapter, naverAdapter, kakaoAdapter, asuraAdapter, nyxAdapter, ezmangaAdapter, luaAdapter, violetAdapter,
+  evaAdapter, magusAdapter, valirAdapter, sirenAdapter];
 
 /** Look up an adapter by its id. */
 export function getAdapterById(id) {

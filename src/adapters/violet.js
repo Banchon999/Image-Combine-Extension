@@ -1,13 +1,15 @@
 /**
- * Violet Scans adapter (violetmanga.com; violetscans.org/.com links redirect there).
+ * MangaReader-theme WordPress sites: Violet Scans (violetmanga.com; violetscans.org/.com
+ * links redirect there) here, and Eva Scans (eva.js) built from the same parts.
  *
  * A WordPress site on the "MangaReader" theme, so everything comes from the
  * pages themselves, read as text:
  *   GET /comics/{slug}/          series info table and the full chapter list
+ *                                (/series/{slug}/ on Eva)
  *   GET /{slug}-chapter-{n}/     ts_reader.run({...sources:[{images:[...]}]})
  *   GET /?s={query} (/page/N/)   search results, 10 per page
  *
- * Violet sells chapters for coins. In the chapter list a paid chapter has no
+ * Both sites sell chapters for coins. In the chapter list a paid chapter has no
  * link at all, only a "#lockedChapterModal" button with its price
  * (data-coin), so it is marked not free there and refused before any request.
  * The site serves a paid chapter's page without reader data ("This chapter is
@@ -20,8 +22,6 @@
 
 import { FetchError, ProtectedContentError } from '../common/errors.js';
 
-const SITE = 'https://violetmanga.com';
-const HOSTS = ['violetmanga.com', 'www.violetmanga.com', 'violetscans.org', 'www.violetscans.org', 'violetscans.com', 'www.violetscans.com'];
 const SEARCH_LIMIT = 50;
 const SEARCH_MAX_PAGES = 5;
 const MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
@@ -39,36 +39,6 @@ export function cleanSlug(segment) {
   if (!slug || slug.length > 300 || slug === '.' || slug === '..') return null;
   if (/[/\\?#\s]/.test(slug) || /\p{Cc}/u.test(slug)) return null;
   return slug;
-}
-
-/**
- * Parse a series or chapter link on any Violet host.
- *
- * Every chapter link seen (1,966 across 25 series) is "/{series slug}-chapter-N/",
- * so the series comes straight from it; getSeries still checks the chapter
- * page's own series link if that guess ever 404s.
- *
- * @returns {{seriesId: string, lang: string, episodeNo?: number, chapterPath?: string}|null}
- */
-export function parseUrl(input) {
-  let url;
-  try { url = new URL(String(input).trim()); } catch { return null; }
-  if (!['https:', 'http:'].includes(url.protocol) || !HOSTS.includes(url.hostname.toLowerCase())) return null;
-  const series = url.pathname.match(/^\/comics\/([^/]+)\/?$/);
-  if (series) {
-    const seriesId = cleanSlug(series[1]);
-    return seriesId ? { seriesId, lang: 'en' } : null;
-  }
-  const chapter = CHAPTER_PATH.exec(url.pathname);
-  if (!chapter) return null;
-  const seriesId = cleanSlug(chapter[1]);
-  if (!seriesId) return null;
-  const episodeNo = Number(chapter[3] === undefined ? chapter[2] : `${chapter[2]}.${chapter[3]}`);
-  return { seriesId, lang: 'en', episodeNo, chapterPath: url.pathname.endsWith('/') ? url.pathname : `${url.pathname}/` };
-}
-
-export function seriesUrl(slug) {
-  return `${SITE}/comics/${encodeURIComponent(slug)}/`;
 }
 
 /** Decode the HTML entities WordPress emits in titles and text. */
@@ -91,12 +61,28 @@ const plainText = (html) => decodeHtml(String(html ?? '')
   .replace(/ *\n */g, '\n')
   .trim();
 
-function httpsUrl(value) {
+/** An absolute https URL, resolved against the site; '' for anything else. */
+function httpsUrl(value, base) {
   try {
-    const url = new URL(decodeHtml(String(value ?? '')).trim(), SITE);
+    const url = new URL(decodeHtml(String(value ?? '')).trim(), base);
     return url.protocol === 'https:' ? url.href : '';
   } catch {
     return '';
+  }
+}
+
+/**
+ * WordPress sites often serve images through Jetpack's Photon CDN
+ * ("https://i2.wp.com/evascans.net/wp-content/..."); use the site's own copy.
+ */
+function unwrapPhoton(href) {
+  try {
+    const url = new URL(href);
+    if (!/^i\d\.wp\.com$/.test(url.hostname)) return href;
+    const inner = new URL(`https://${url.pathname.replace(/^\/+/, '')}`);
+    return inner.hostname.includes('.') ? inner.href : href;
+  } catch {
+    return href;
   }
 }
 
@@ -123,186 +109,251 @@ function infoRow(html, label) {
   return value === '-' ? '' : value;
 }
 
-/** Series metadata and every chapter from the /comics/{slug}/ page. */
-export function parseSeriesPage(html, slug) {
-  const text = String(html ?? '');
-  const type = infoRow(text, 'Type');
-  const heading = /<h1[^>]*class="entry-title"[^>]*>([\s\S]*?)<\/h1>/i.exec(text);
-  const ogTitle = /<meta property="og:title" content="([^"]*)"/i.exec(text);
-  const title = (heading ? plainText(heading[1]) : '')
-    || decodeHtml(ogTitle?.[1] ?? '').replace(/\s+Manga\s*\|\s*Violet Scans$/i, '').trim()
-    || slug;
-  if (/^novel$/i.test(type)) {
-    throw new FetchError(`"${title}" is a text novel on Violet Scans, not a comic, so it has no pages to download.`);
-  }
-  const people = [infoRow(text, 'Author'), infoRow(text, 'Artist')].filter(Boolean);
-  const synopsis = /<div class="entry-content entry-content-single"[^>]*>([\s\S]*?)<\/div>/i.exec(text);
-  const cover = /<meta property="og:image" content="([^"]*)"/i.exec(text)
-    ?? /<div class="thumb"[^>]*>\s*<img[^>]*src="([^"]+)"/i.exec(text);
 
-  const chapters = [];
-  const seen = new Set();
-  for (const [, rawNumber, body] of text.matchAll(/<li data-num="([^"]*)"[^>]*>([\s\S]*?)<\/li>/gi)) {
-    if (!/^\d+(?:\.\d+)?$/.test(rawNumber.trim())) continue;
-    const number = Number(rawNumber);
-    if (seen.has(number)) continue;
-    const label = plainText(/class="chapternum"[^>]*>([\s\S]*?)<\/span>/i.exec(body)?.[1] ?? '');
-    const date = isoDate(plainText(/class="chapterdate"[^>]*>([\s\S]*?)<\/span>/i.exec(body)?.[1] ?? ''));
-    const chapter = {
-      number,
-      // Labels read "Chapter 6"; keep only text beyond that, if any.
-      title: label.replace(/^chapter\s*[\d.]+\s*[-:–—]?\s*/i, '').trim(),
-      date,
-      chapterId: chapterIdFor(number),
+const escapeRegExp = (text) => String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/* ------------------------------------------------------------------ *
+ * One MangaReader site
+ * ------------------------------------------------------------------ */
+
+/**
+ * Build the parsers and adapter for one MangaReader-theme site. The sites
+ * differ only in their domain, the path of series pages ("comics" on Violet,
+ * "series" on Eva) and their name; the markup is the theme's own.
+ *
+ * @param {{id: string, label: string, site: string, hosts: string[], hostPatterns: string[], seriesPath: string}} config
+ */
+export function createMangaReaderSite({ id, label, site, hosts, hostPatterns, seriesPath }) {
+  const home = new URL(site).hostname;
+  const homeLink = escapeRegExp(`${site}/${seriesPath}/`);
+  const seriesPattern = new RegExp(`^/${escapeRegExp(seriesPath)}/([^/]+)/?$`);
+  const absolute = (value) => unwrapPhoton(httpsUrl(value, site));
+
+  /**
+   * Parse a series or chapter link on any of the site's hosts.
+   *
+   * Every chapter link seen is "/{series slug}-chapter-N/" (1,966 across 25
+   * Violet series, 15 Eva series), so the series comes straight from it;
+   * getSeries still checks the chapter page's own series link if that guess
+   * ever 404s.
+   *
+   * @returns {{seriesId: string, lang: string, episodeNo?: number, chapterPath?: string}|null}
+   */
+  function parseUrl(input) {
+    let url;
+    try { url = new URL(String(input).trim()); } catch { return null; }
+    if (!['https:', 'http:'].includes(url.protocol) || !hosts.includes(url.hostname.toLowerCase())) return null;
+    const series = seriesPattern.exec(url.pathname);
+    if (series) {
+      const seriesId = cleanSlug(series[1]);
+      return seriesId ? { seriesId, lang: 'en' } : null;
+    }
+    const chapter = CHAPTER_PATH.exec(url.pathname);
+    if (!chapter) return null;
+    const seriesId = cleanSlug(chapter[1]);
+    if (!seriesId) return null;
+    const episodeNo = Number(chapter[3] === undefined ? chapter[2] : `${chapter[2]}.${chapter[3]}`);
+    return { seriesId, lang: 'en', episodeNo, chapterPath: url.pathname.endsWith('/') ? url.pathname : `${url.pathname}/` };
+  }
+
+  const seriesUrl = (slug) => `${site}/${seriesPath}/${encodeURIComponent(slug)}/`;
+
+  /** Series metadata and every chapter from the series page. */
+  function parseSeriesPage(html, slug) {
+    const text = String(html ?? '');
+    const type = infoRow(text, 'Type');
+    const heading = /<h1[^>]*class="entry-title"[^>]*>([\s\S]*?)<\/h1>/i.exec(text);
+    const ogTitle = /<meta property="og:title" content="([^"]*)"/i.exec(text);
+    const title = (heading ? plainText(heading[1]) : '')
+      || decodeHtml(ogTitle?.[1] ?? '').replace(new RegExp(`\\s+Manga\\s*[|–-]\\s*${escapeRegExp(label)}$`, 'i'), '').trim()
+      || slug;
+    if (/^novel$/i.test(type)) {
+      throw new FetchError(`"${title}" is a text novel on ${label}, not a comic, so it has no pages to download.`);
+    }
+    const people = [infoRow(text, 'Author'), infoRow(text, 'Artist')].filter(Boolean);
+    const synopsis = /<div class="entry-content entry-content-single"[^>]*>([\s\S]*?)<\/div>/i.exec(text);
+    const cover = /<meta property="og:image" content="([^"]*)"/i.exec(text)
+      ?? /<div class="thumb"[^>]*>\s*<img[^>]*src="([^"]+)"/i.exec(text);
+
+    const chapters = [];
+    const seen = new Set();
+    for (const [, rawNumber, body] of text.matchAll(/<li data-num="([^"]*)"[^>]*>([\s\S]*?)<\/li>/gi)) {
+      if (!/^\d+(?:\.\d+)?$/.test(rawNumber.trim())) continue;
+      const number = Number(rawNumber);
+      if (seen.has(number)) continue;
+      const chapterLabel = plainText(/class="chapternum"[^>]*>([\s\S]*?)<\/span>/i.exec(body)?.[1] ?? '');
+      const date = isoDate(plainText(/class="chapterdate"[^>]*>([\s\S]*?)<\/span>/i.exec(body)?.[1] ?? ''));
+      const chapter = {
+        number,
+        // Labels read "Chapter 6"; keep only text beyond that, if any.
+        title: chapterLabel.replace(/^chapter\s*[\d.]+\s*[-:–—]?\s*/i, '').trim(),
+        date,
+        chapterId: chapterIdFor(number),
+      };
+      if (/lockedChapterModal/i.test(body)) {
+        const coins = Number(/data-coin="(\d+)"/i.exec(body)?.[1]) || 0;
+        chapters.push({ ...chapter, url: `${site}/${encodeURIComponent(slug)}-chapter-${String(number).replace('.', '-')}/`, isFree: false, lock: { price: coins } });
+      } else {
+        const href = /<a\s[^>]*href="([^"]+)"/i.exec(body);
+        const url = href ? httpsUrl(href[1], site) : '';
+        if (!url || new URL(url).hostname !== home) continue;
+        chapters.push({ ...chapter, url, isFree: true });
+      }
+      seen.add(number);
+    }
+    return {
+      title,
+      author: [...new Set(people)].join(', '),
+      summary: synopsis ? plainText(synopsis[1]) : '',
+      cover: cover ? absolute(cover[1]) : '',
+      chapters: chapters.sort((a, b) => a.number - b.number),
     };
-    if (/lockedChapterModal/i.test(body)) {
-      const coins = Number(/data-coin="(\d+)"/i.exec(body)?.[1]) || 0;
-      chapters.push({ ...chapter, url: `${SITE}/${encodeURIComponent(slug)}-chapter-${String(number).replace('.', '-')}/`, isFree: false, lock: { price: coins } });
-    } else {
-      const href = /<a\s[^>]*href="([^"]+)"/i.exec(body);
-      const url = href ? httpsUrl(href[1]) : '';
-      if (!url || new URL(url).hostname !== 'violetmanga.com') continue;
-      chapters.push({ ...chapter, url, isFree: true });
-    }
-    seen.add(number);
   }
-  return {
-    title,
-    author: [...new Set(people)].join(', '),
-    summary: synopsis ? plainText(synopsis[1]) : '',
-    cover: cover ? httpsUrl(cover[1]) : '',
-    chapters: chapters.sort((a, b) => a.number - b.number),
+
+  /** The series slug a chapter page links back to. */
+  function seriesSlugFromChapterPage(html) {
+    const text = String(html ?? '');
+    const link = new RegExp(`class="allc"[^>]*>[\\s\\S]*?href="${homeLink}([^/"]+)/"`, 'i').exec(text)
+      ?? new RegExp(`itemprop="item"\\s+href="${homeLink}([^/"]+)/"`, 'i').exec(text)
+      ?? new RegExp(`href="${homeLink}([^/"]+)/"\\s+class="[^"]*btn-back`, 'i').exec(text);
+    return link ? cleanSlug(link[1]) : null;
+  }
+
+  function lockedError(number, price, freeAt = '') {
+    const cost = Number(price) > 0 ? `costs ${Number(price)} coins` : 'is locked';
+    return new ProtectedContentError(
+      `${label} chapter ${number} ${cost}${freeAt ? ` (the site lists it as free from ${freeAt})` : ''}. ` +
+      'This extension only downloads free chapters and does not unlock paid ones.',
+      { price: Number(price) || 0 },
+    );
+  }
+
+  /** Page images from a chapter page, in the reader's own order. */
+  function parseChapterImages(html, expectedNumber) {
+    const text = String(html ?? '');
+    const reader = /ts_reader\.run\((\{[\s\S]*?\})\);/.exec(text);
+    if (!reader) {
+      // Second line of defence: the site served the locked page.
+      if (/This chapter is locked|class="lock-card"/i.test(text)) {
+        // The price and countdown sit in their own tags and lines.
+        const words = plainText(text.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')).replace(/\s+/g, ' ');
+        const price = /Buy now for (\d+) Coins/i.exec(words)?.[1];
+        const freeAt = /Free in (\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2})?)/i.exec(words)?.[1] ?? '';
+        throw lockedError(expectedNumber, price, freeAt);
+      }
+      throw new FetchError(`${label} chapter ${expectedNumber} has no image reader (a text chapter, or the page changed). Check that it opens in your browser.`);
+    }
+    let data;
+    try { data = JSON.parse(reader[1]); } catch {
+      throw new FetchError(`${label} chapter ${expectedNumber}: could not read the page list.`);
+    }
+    const source = (Array.isArray(data?.sources) ? data.sources : []).find((s) => Array.isArray(s?.images) && s.images.length);
+    const images = [];
+    const seen = new Set();
+    for (const value of source?.images ?? []) {
+      const url = httpsUrl(value, site);
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      images.push({ url, index: images.length + 1 });
+    }
+    if (!images.length) throw new FetchError(`${label} chapter ${expectedNumber} has no pages yet.`);
+    return images;
+  }
+
+  /** One page of /?s= results: comics only (novels carry "[Novel]" in the title). */
+  function parseSearchPage(html) {
+    const text = String(html ?? '');
+    const start = text.indexOf('class="listupd"');
+    if (start < 0) return { results: [], hasNext: false };
+    const end = text.indexOf('class="pagination"', start);
+    const list = text.slice(start, end > 0 ? end : undefined);
+    const results = [];
+    const linkPattern = new RegExp(`href="${homeLink}([^/"]+)/"`, 'i');
+    for (const [, block] of list.matchAll(/<div class="bsx">([\s\S]*?)<\/a>/gi)) {
+      const link = linkPattern.exec(block);
+      const seriesId = link ? cleanSlug(link[1]) : null;
+      if (!seriesId) continue;
+      const title = decodeHtml(/title="([^"]*)"/i.exec(block)?.[1] ?? '').trim()
+        || plainText(/<div class="tt">([\s\S]*?)<\/div>/i.exec(block)?.[1] ?? '');
+      // Not by slug: "...-of-a-martial-arts-novel" is a comic.
+      if (/\[novel\]/i.test(title) || /-format--novel|class="type Novel"/i.test(block)) continue;
+      const image = /<img[^>]*src="([^"]+)"/i.exec(block);
+      results.push({ seriesId, title: title || seriesId, author: '', thumbnail: image ? absolute(image[1]) : '', url: seriesUrl(seriesId) });
+    }
+    return { results, hasNext: /class="next page-numbers"|class="page-numbers next"/i.test(text.slice(end > 0 ? end : start)) };
+  }
+
+  const pageText = async (ctx, url) => (await ctx.fetchRaw(url)).text();
+
+  const adapter = {
+    id,
+    label,
+    hostPatterns,
+    capabilities: { search: true, originalQuality: false, download: true, languages: ['en'] },
+    parseUrl,
+
+    async search(query, _lang, ctx) {
+      const q = String(query ?? '').trim();
+      if (!q) return [];
+      const found = new Map();
+      for (let page = 1; page <= SEARCH_MAX_PAGES && found.size < SEARCH_LIMIT; page++) {
+        const url = page === 1 ? `${site}/?s=${encodeURIComponent(q)}` : `${site}/page/${page}/?s=${encodeURIComponent(q)}`;
+        const { results, hasNext } = parseSearchPage(await pageText(ctx, url));
+        for (const result of results) if (!found.has(result.seriesId)) found.set(result.seriesId, result);
+        if (!hasNext || !results.length) break;
+      }
+      return [...found.values()].slice(0, SEARCH_LIMIT);
+    },
+
+    async getSeries(ref, ctx) {
+      let html;
+      try {
+        html = await pageText(ctx, seriesUrl(ref.seriesId));
+      } catch (error) {
+        if (error?.status !== 404) throw error;
+        // A chapter link whose series slug was guessed wrong: ask the chapter page.
+        const slug = ref.chapterPath
+          ? seriesSlugFromChapterPage(await pageText(ctx, `${site}${ref.chapterPath}`))
+          : null;
+        if (!slug || slug === ref.seriesId) {
+          throw new FetchError(`${label} has no series "${ref.seriesId}". Check the link opens on ${home}.`, { status: 404 });
+        }
+        // Correct the reference itself, so Following stores the real series.
+        ref.seriesId = slug;
+        html = await pageText(ctx, seriesUrl(slug));
+      }
+      const series = parseSeriesPage(html, ref.seriesId);
+      if (!series.chapters.length) throw new FetchError(`No ${label} chapters found for "${ref.seriesId}".`);
+      return series;
+    },
+
+    async getChapterImages(_ref, chapter, ctx) {
+      // Refuse a chapter the list marked as paid before any request.
+      if (chapter?.isFree === false) throw lockedError(chapter.number, chapter.lock?.price);
+      let url;
+      try { url = new URL(chapter?.url ?? ''); } catch { url = null; }
+      if (!url || url.protocol !== 'https:' || url.hostname !== home) {
+        throw new FetchError(`${label} chapter ${chapter?.number} has no valid link; reopen the series and try again.`);
+      }
+      return parseChapterImages(await pageText(ctx, url.href), chapter.number);
+    },
   };
-}
 
-/** The series slug a chapter page links back to. */
-export function seriesSlugFromChapterPage(html) {
-  const text = String(html ?? '');
-  const link = /class="allc"[^>]*>[\s\S]*?href="https:\/\/violetmanga\.com\/comics\/([^/"]+)\/"/i.exec(text)
-    ?? /itemprop="item"\s+href="https:\/\/violetmanga\.com\/comics\/([^/"]+)\/"/i.exec(text)
-    ?? /href="https:\/\/violetmanga\.com\/comics\/([^/"]+)\/"\s+class="[^"]*btn-back/i.exec(text);
-  return link ? cleanSlug(link[1]) : null;
-}
-
-function lockedError(number, price, freeAt = '') {
-  const cost = Number(price) > 0 ? `costs ${Number(price)} coins` : 'is locked';
-  return new ProtectedContentError(
-    `Violet Scans chapter ${number} ${cost}${freeAt ? ` (the site lists it as free from ${freeAt})` : ''}. ` +
-    'This extension only downloads free chapters and does not unlock paid ones.',
-    { price: Number(price) || 0 },
-  );
-}
-
-/** Page images from a chapter page, in the reader's own order. */
-export function parseChapterImages(html, expectedNumber) {
-  const text = String(html ?? '');
-  const reader = /ts_reader\.run\((\{[\s\S]*?\})\);/.exec(text);
-  if (!reader) {
-    // Second line of defence: the site served the locked page.
-    if (/This chapter is locked|class="lock-card"/i.test(text)) {
-      // The price and countdown sit in their own tags and lines.
-      const words = plainText(text.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')).replace(/\s+/g, ' ');
-      const price = /Buy now for (\d+) Coins/i.exec(words)?.[1];
-      const freeAt = /Free in (\d{4}-\d{2}-\d{2}(?: \d{2}:\d{2})?)/i.exec(words)?.[1] ?? '';
-      throw lockedError(expectedNumber, price, freeAt);
-    }
-    throw new FetchError(`Violet Scans chapter ${expectedNumber} has no image reader (a text chapter, or the page changed). Check that it opens in your browser.`);
-  }
-  let data;
-  try { data = JSON.parse(reader[1]); } catch {
-    throw new FetchError(`Violet Scans chapter ${expectedNumber}: could not read the page list.`);
-  }
-  const source = (Array.isArray(data?.sources) ? data.sources : []).find((s) => Array.isArray(s?.images) && s.images.length);
-  const images = [];
-  const seen = new Set();
-  for (const value of source?.images ?? []) {
-    const url = httpsUrl(value);
-    if (!url || seen.has(url)) continue;
-    seen.add(url);
-    images.push({ url, index: images.length + 1 });
-  }
-  if (!images.length) throw new FetchError(`Violet Scans chapter ${expectedNumber} has no pages yet.`);
-  return images;
-}
-
-/** One page of /?s= results: comics only (novels carry "[Novel]" in the title). */
-export function parseSearchPage(html) {
-  const text = String(html ?? '');
-  const start = text.indexOf('class="listupd"');
-  if (start < 0) return { results: [], hasNext: false };
-  const end = text.indexOf('class="pagination"', start);
-  const list = text.slice(start, end > 0 ? end : undefined);
-  const results = [];
-  for (const [, block] of list.matchAll(/<div class="bsx">([\s\S]*?)<\/a>/gi)) {
-    const link = /href="https:\/\/violetmanga\.com\/comics\/([^/"]+)\/"/i.exec(block);
-    const seriesId = link ? cleanSlug(link[1]) : null;
-    if (!seriesId) continue;
-    const title = decodeHtml(/title="([^"]*)"/i.exec(block)?.[1] ?? '').trim()
-      || plainText(/<div class="tt">([\s\S]*?)<\/div>/i.exec(block)?.[1] ?? '');
-    // Not by slug: "...-of-a-martial-arts-novel" is a comic.
-    if (/\[novel\]/i.test(title) || /violet-format--novel/i.test(block)) continue;
-    const image = /<img[^>]*src="([^"]+)"/i.exec(block);
-    results.push({ seriesId, title: title || seriesId, author: '', thumbnail: image ? httpsUrl(image[1]) : '', url: seriesUrl(seriesId) });
-  }
-  return { results, hasNext: /class="next page-numbers"|class="page-numbers next"/i.test(text.slice(end > 0 ? end : start)) };
+  return { parseUrl, seriesUrl, parseSeriesPage, seriesSlugFromChapterPage, parseChapterImages, parseSearchPage, adapter };
 }
 
 /* ------------------------------------------------------------------ *
- * Adapter
+ * Violet Scans
  * ------------------------------------------------------------------ */
 
-const pageText = async (ctx, url) => (await ctx.fetchRaw(url)).text();
-
-export const violetAdapter = {
+const violet = createMangaReaderSite({
   id: 'violet',
   label: 'Violet Scans',
+  site: 'https://violetmanga.com',
+  hosts: ['violetmanga.com', 'www.violetmanga.com', 'violetscans.org', 'www.violetscans.org', 'violetscans.com', 'www.violetscans.com'],
   hostPatterns: ['violetmanga.com', 'violetscans.org', 'violetscans.com'],
-  capabilities: { search: true, originalQuality: false, download: true, languages: ['en'] },
-  parseUrl,
+  seriesPath: 'comics',
+});
 
-  async search(query, _lang, ctx) {
-    const q = String(query ?? '').trim();
-    if (!q) return [];
-    const found = new Map();
-    for (let page = 1; page <= SEARCH_MAX_PAGES && found.size < SEARCH_LIMIT; page++) {
-      const url = page === 1 ? `${SITE}/?s=${encodeURIComponent(q)}` : `${SITE}/page/${page}/?s=${encodeURIComponent(q)}`;
-      const { results, hasNext } = parseSearchPage(await pageText(ctx, url));
-      for (const result of results) if (!found.has(result.seriesId)) found.set(result.seriesId, result);
-      if (!hasNext || !results.length) break;
-    }
-    return [...found.values()].slice(0, SEARCH_LIMIT);
-  },
-
-  async getSeries(ref, ctx) {
-    let html;
-    try {
-      html = await pageText(ctx, seriesUrl(ref.seriesId));
-    } catch (error) {
-      if (error?.status !== 404) throw error;
-      // A chapter link whose series slug was guessed wrong: ask the chapter page.
-      const slug = ref.chapterPath
-        ? seriesSlugFromChapterPage(await pageText(ctx, `${SITE}${ref.chapterPath}`))
-        : null;
-      if (!slug || slug === ref.seriesId) {
-        throw new FetchError(`Violet Scans has no series "${ref.seriesId}". Check the link opens on violetmanga.com.`, { status: 404 });
-      }
-      // Correct the reference itself, so Following stores the real series.
-      ref.seriesId = slug;
-      html = await pageText(ctx, seriesUrl(slug));
-    }
-    const series = parseSeriesPage(html, ref.seriesId);
-    if (!series.chapters.length) throw new FetchError(`No Violet Scans chapters found for "${ref.seriesId}".`);
-    return series;
-  },
-
-  async getChapterImages(_ref, chapter, ctx) {
-    // Refuse a chapter the list marked as paid before any request.
-    if (chapter?.isFree === false) throw lockedError(chapter.number, chapter.lock?.price);
-    let url;
-    try { url = new URL(chapter?.url ?? ''); } catch { url = null; }
-    if (!url || url.protocol !== 'https:' || url.hostname !== 'violetmanga.com') {
-      throw new FetchError(`Violet Scans chapter ${chapter?.number} has no valid link; reopen the series and try again.`);
-    }
-    return parseChapterImages(await pageText(ctx, url.href), chapter.number);
-  },
-};
+export const { parseUrl, seriesUrl, parseSeriesPage, seriesSlugFromChapterPage, parseChapterImages, parseSearchPage } = violet;
+export const violetAdapter = violet.adapter;
